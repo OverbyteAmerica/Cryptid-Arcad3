@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DEFENDERS — Lab 4: Contain the Swarm</title>
+
+<style>
+
+/* ========================= 
+   DEFENDERS GUILD — GLOBAL STYLES 
+   ========================= */
+
+body { 
+  background-color: #000;
+  color: #00ffcc;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 16px;
+  line-height: 1.4;
+  margin: 0;
+  padding: 20px;
+}
+
+h1, h2, h3 { 
+  color: #00ffcc;
+}
+
+.panel {
+  border: 1px solid #00ffcc;
+  padding: 18px;
+  margin: 20px 0;
+  background-color: rgba(0,0,0,0.85);
+  border-radius: 6px;
+  box-shadow: 0 0 12px rgba(0,255,204,0.4);
+}
+
+button {
+  background-color: #000;
+  border: 1px solid #00ffcc;
+  color: #00ffcc;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-family: monospace;
+}
+
+button:hover {
+  background-color: #002;
+}
+
+.log {
+  background-color: #001;
+  border: 1px solid #00ffcc;
+  padding: 12px;
+  height: 250px;
+  overflow-y: auto;
+  font-size: 0.85rem;
+}
+
+.hidden { display: none; }
+
+.sonar {
+  width: 300px;
+  height: 300px;
+  border: 1px solid #00ffcc;
+  border-radius: 50%;
+  margin: 20px auto;
+  position: relative;
+}
+
+.bug-byte {
+  width: 8px;
+  height: 8px;
+  background: red;
+  border-radius: 50%;
+  position: absolute;
+  animation: pulse 1.2s infinite;
+}
+
+@keyframes pulse {
+  0% {opacity:1;}
+  50% {opacity:.4;}
+  100% {opacity:1;}
+}
+
+#cookie {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 240px;
+  border: 1px solid #00ffcc;
+  background: #000;
+  padding: 12px;
+}
+
+.boot {
+  font-size: 1.2rem;
+  min-height: 100px;
+}
+
+.typing::after {
+  content: "_";
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  50% {opacity:0;}
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>LAB 4 — Containment & Isolation</h1>
+
+<div class="boot typing" id="boot"></div>
+
+<div class="panel hidden" id="mission">
+<h2>Contain the Swarm</h2>
+<p>Byte Bugs are spreading laterally inside the Vault. You must isolate infected systems.</p>
+<button onclick="investigate()">Investigate Traffic</button>
+</div>
+
+<div class="panel hidden" id="traffic">
+<h3>Traffic Analysis</h3>
+<p>Lateral movement detected.</p>
+<button onclick="isolate()">Isolate Subnet</button>
+<button onclick="fail()">Ignore</button>
+<button onclick="fail()">Block Single IP</button>
+</div>
+
+<div class="panel hidden" id="firewall">
+<h3>External Channel</h3>
+<p>Malicious external traffic detected.</p>
+<button onclick="block()">Block IP</button>
+</div>
+
+<div class="panel hidden" id="bugs">
+<h3>Byte Bug Escape</h3>
+<button onclick="contain()">Deploy Cyber Sleeves</button>
+</div>
+
+<div class="panel hidden" id="sonarPanel">
+<div class="sonar">
+<div class="bug-byte" style="top:40%;left:70%"></div>
+<div class="bug-byte" style="top:55%;left:50%"></div>
+<div class="bug-byte" style="top:30%;left:35%"></div>
+</div>
+</div>
+
+<div class="panel">
+<h3>Vault Integrity</h3>
+<p id="integrity">60%</p>
+</div>
+
+<div class="log" id="log"></div>
+
+<div id="cookie">
+🐕 Cookie: Awaiting orders, Defender.
+</div>
+
+<script>
+
+let integrity = 60;
+
+function log(msg){
+  document.getElementById("log").innerHTML += "> " + msg + "<br>";
+}
+
+function update(val){
+  integrity += val;
+  document.getElementById("integrity").innerText = integrity + "%";
+}
+
+function cookie(msg){
+  document.getElementById("cookie").innerText = "🐕 Cookie: " + msg;
+}
+
+function typeBoot(){
+  let text = `
+ANOMALY DETECTED.
+Lateral movement attempt.
+
+Darwin fragment:
+"Containment gives you control."
+`;
+  let i = 0;
+  let el = document.getElementById("boot");
+
+  function type(){
+    if(i < text.length){
+      el.innerHTML += text[i];
+      i++;
+      setTimeout(type, 20);
+    } else {
+      el.classList.remove("typing");
+      document.getElementById("mission").classList.remove("hidden");
+    }
+  }
+  type();
+}
+
+function investigate(){
+  document.getElementById("traffic").classList.remove("hidden");
+  document.getElementById("sonarPanel").classList.remove("hidden");
+  log("SMB lateral movement detected.");
+  cookie("Segment the infected subnet.");
+}
+
+function isolate(){
+  log("Subnet isolated.");
+  update(10);
+  cookie("Containment successful.");
+  document.getElementById("traffic").classList.add("hidden");
+  document.getElementById("firewall").classList.remove("hidden");
+}
+
+function block(){
+  log("External IP blocked.");
+  update(15);
+  cookie("Channel closed.");
+  document.getElementById("firewall").classList.add("hidden");
+  document.getElementById("bugs").classList.remove("hidden");
+}
+
+function contain(){
+  log("Byte Bugs isolated.");
+  update(10);
+  cookie("Vault stabilized.");
+}
+
+function fail(){
+  log("Infection spreading.");
+  update(-10);
+  cookie("That increased risk.");
+}
+
+typeBoot();
+
+</script>
+
+</body>
+</html>
+```
+

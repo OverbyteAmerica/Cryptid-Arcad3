@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DEFENDERS — Lab 9: Predictive Defense Engine</title>
+
+<style>
+
+body {
+  background:#000;
+  color:#00ffcc;
+  font-family:'Courier New', monospace;
+  padding:20px;
+}
+
+.panel {
+  border:1px solid #00ffcc;
+  padding:18px;
+  margin:20px 0;
+  background:rgba(0,0,0,.9);
+}
+
+button {
+  background:#000;
+  border:1px solid #00ffcc;
+  color:#00ffcc;
+  padding:10px 16px;
+  cursor:pointer;
+}
+
+button:hover { background:#002; }
+
+.log {
+  border:1px solid #00ffcc;
+  background:#001;
+  height:240px;
+  overflow-y:auto;
+  padding:10px;
+  font-size:.85rem;
+}
+
+.hidden { display:none; }
+
+.boot {
+  font-size:1.2rem;
+  min-height:120px;
+}
+
+.typing::after {
+  content:"_";
+  animation:blink 1s infinite;
+}
+
+@keyframes blink { 50%{opacity:0;} }
+
+.option {
+  border:1px solid #00ffcc;
+  padding:10px;
+  margin:10px 0;
+  cursor:pointer;
+}
+
+.option:hover { background:#002; }
+
+#cookie {
+  position:fixed;
+  right:20px;
+  top:20px;
+  width:240px;
+  border:1px solid #00ffcc;
+  padding:12px;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>LAB 9 — Predictive Defense Engine</h1>
+
+<div class="boot typing" id="boot"></div>
+
+<div class="panel hidden" id="mission">
+<h2>Mission: Build AI Behavioral Baseline</h2>
+<p>
+Darwin is training on historical logs.  
+Your task: identify anomalies before the attack executes.
+</p>
+<button onclick="start()">Initialize AI Model</button>
+</div>
+
+<div class="panel hidden" id="phase1">
+<h3>Phase 1: Establish Baseline</h3>
+<p>Normal login pattern: 8am–6pm, US region.</p>
+
+<div class="option" onclick="baseline(true)">
+Flag 3am overseas login attempt
+</div>
+
+<div class="option" onclick="baseline(false)">
+Ignore single anomaly
+</div>
+
+</div>
+
+<div class="panel hidden" id="phase2">
+<h3>Phase 2: Behavioral Drift</h3>
+<p>User suddenly accessing admin panels.</p>
+
+<div class="option" onclick="drift(true)">
+Compare role vs access request
+</div>
+
+<div class="option" onclick="drift(false)">
+Assume internal testing
+</div>
+
+</div>
+
+<div class="panel hidden" id="phase3">
+<h3>Phase 3: AI Decision Threshold</h3>
+<p>Model confidence: 87% malicious probability.</p>
+
+<div class="option" onclick="decision(true)">
+Auto-isolate account via SOAR
+</div>
+
+<div class="option" onclick="decision(false)">
+Wait for human review
+</div>
+
+</div>
+
+<div class="panel hidden" id="success">
+<h2>Predictive Defense Achieved</h2>
+<p>
+Attack neutralized before execution.  
+Darwin’s predictive model is active.
+</p>
+
+<button onclick="returnDashboard()">Return to Dashboard</button>
+</div>
+
+<div class="log" id="log"></div>
+
+<div class="panel">
+<h3>AI Defense Confidence</h3>
+<p id="score">80%</p>
+</div>
+
+<div id="cookie">🐕 Cookie: Awaiting model initialization.</div>
+
+<script>
+
+let score = 80;
+
+function log(msg){
+  document.getElementById("log").innerHTML += "> " + msg + "<br>";
+}
+
+function update(val){
+  score += val;
+  document.getElementById("score").innerText = score + "%";
+}
+
+function cookie(msg){
+  document.getElementById("cookie").innerText = "🐕 Cookie: " + msg;
+}
+
+function typeBoot(){
+  let text = `
+PREDICTIVE DEFENSE ENGINE ONLINE.
+
+Darwin fragment:
+"Patterns reveal intent.
+Intent reveals threat."
+`;
+  let i = 0;
+  let el = document.getElementById("boot");
+
+  function type(){
+    if(i < text.length){
+      el.innerHTML += text[i];
+      i++;
+      setTimeout(type,20);
+    } else {
+      el.classList.remove("typing");
+      document.getElementById("mission").classList.remove("hidden");
+    }
+  }
+  type();
+}
+
+function start(){
+  document.getElementById("phase1").classList.remove("hidden");
+  log("AI training initiated on historical data.");
+  cookie("Baseline analysis phase.");
+}
+
+function baseline(correct){
+  if(correct){
+    log("Anomalous login flagged.");
+    update(5);
+    cookie("Behavioral drift detected.");
+    document.getElementById("phase1").classList.add("hidden");
+    document.getElementById("phase2").classList.remove("hidden");
+  } else {
+    log("Anomaly ignored. Risk increasing.");
+    update(-10);
+  }
+}
+
+function drift(correct){
+  if(correct){
+    log("Privilege anomaly confirmed.");
+    update(5);
+    cookie("Model confidence rising.");
+    document.getElementById("phase2").classList.add("hidden");
+    document.getElementById("phase3").classList.remove("hidden");
+  } else {
+    log("Suspicious behavior dismissed.");
+    update(-10);
+  }
+}
+
+function decision(correct){
+  if(correct){
+    log("SOAR automation triggered.");
+    update(10);
+    cookie("Threat neutralized pre-execution.");
+    document.getElementById("phase3").classList.add("hidden");
+    document.getElementById("success").classList.remove("hidden");
+  } else {
+    log("Delay allowed attack staging.");
+    update(-15);
+  }
+}
+
+function returnDashboard(){
+  window.location.href = "dashboard.html";
+}
+
+typeBoot();
+
+</script>
+
+</body>
+</html>

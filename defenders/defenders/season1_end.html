@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DEFENDERS — Awakening</title>
+
+<style>
+
+body {
+  background:#000;
+  color:#00ffcc;
+  font-family:'Courier New', monospace;
+  text-align:center;
+  padding:40px;
+  transition:background 2s, color 2s;
+}
+
+.hidden { display:none; }
+
+.hero {
+  max-width:900px;
+  margin:auto;
+  font-size:1.2rem;
+  line-height:1.8;
+}
+
+button {
+  margin-top:30px;
+  padding:12px 20px;
+  border:1px solid #00ffcc;
+  background:#000;
+  color:#00ffcc;
+  cursor:pointer;
+}
+
+button:hover { background:#002; }
+
+.fade {
+  opacity:0;
+  transition:opacity 2s;
+}
+
+.typing::after {
+  content:"_";
+  animation:blink 1s infinite;
+}
+
+@keyframes blink { 50%{opacity:0;} }
+
+</style>
+</head>
+
+<body>
+
+<!-- HERO SCREEN -->
+<div id="hero" class="hero typing"></div>
+
+<button id="continueBtn" class="hidden" onclick="activateOS()">Activate Guild OS</button>
+
+
+<!-- OS BOOT -->
+<div id="os" class="hidden hero fade"></div>
+
+<button id="nextBtn" class="hidden" onclick="blackout()">Continue</button>
+
+
+<!-- BLACKOUT -->
+<div id="blackout" class="hidden hero fade"></div>
+
+<script>
+
+let heroText = `
+You are no longer a trainee.
+
+You are a Defender.
+
+The Guild was not created to teach security.
+
+It was created because the world would need you.
+
+Across networks. Across nations.
+Across systems humanity does not yet understand.
+
+The Guild is a living intelligence.
+
+And now… it is awakening.
+`;
+
+let osText = `
+GUILD OPERATING SYSTEM INITIALIZING...
+
+Nodes online.
+Vault synchronized.
+Darwin adaptive learning enabled.
+
+Global Defender network forming.
+
+You are not alone.
+
+The next era of defense has begun.
+`;
+
+let vexText = `
+...signal detected...
+
+You believe you are protecting humanity.
+
+But you have only prolonged its suffering.
+
+Tell me, Defender...
+
+Should humanity be saved?
+
+Or allowed to evolve?
+
+I will be waiting.
+
+— Usher Vex
+`;
+
+let i=0;
+let hero=document.getElementById("hero");
+
+function typeHero(){
+  if(i < heroText.length){
+    hero.innerHTML += heroText[i];
+    i++;
+    setTimeout(typeHero, 25);
+  } else {
+    hero.classList.remove("typing");
+    document.getElementById("continueBtn").classList.remove("hidden");
+  }
+}
+
+function activateOS(){
+
+  document.getElementById("hero").classList.add("hidden");
+
+  let os=document.getElementById("os");
+  os.classList.remove("hidden");
+
+  setTimeout(()=>{
+    os.classList.remove("fade");
+    os.innerText = osText;
+    document.getElementById("nextBtn").classList.remove("hidden");
+  },200);
+}
+
+function blackout(){
+
+  document.body.style.background="#000";
+  document.body.style.color="#ff0033";
+
+  document.getElementById("os").classList.add("hidden");
+  document.getElementById("nextBtn").classList.add("hidden");
+
+  let b=document.getElementById("blackout");
+  b.classList.remove("hidden");
+
+  setTimeout(()=>{
+    b.classList.remove("fade");
+    typeVex();
+  },200);
+}
+
+let j=0;
+
+function typeVex(){
+  let b=document.getElementById("blackout");
+
+  if(j < vexText.length){
+    b.innerHTML += vexText[j];
+    j++;
+    setTimeout(typeVex, 35);
+  } else {
+
+    let sub=document.createElement("p");
+    sub.style.marginTop="40px";
+    sub.style.fontSize="1rem";
+    sub.innerText="Season 2: Subersecurity arrives Fall 2026";
+    b.appendChild(sub);
+  }
+}
+
+typeHero();
+
+</script>
+
+</body>
+</html>

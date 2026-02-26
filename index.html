@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CRYPTID ARCADE</title>
+
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Major+Mono+Display&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      background: black;
+      color: white;
+      text-align: center;
+      font-family: "Courier New", monospace;
+      overflow: hidden;
+    }
+
+    canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: -1;
+    }
+
+    h1 {
+      font-family: 'Major Mono Display', monospace;
+      font-size: 100px;
+      margin-top: 60px;
+      text-shadow:
+        0 0 5px white,
+        0 0 15px white,
+        0 0 40px blue,
+        0 0 80px blue;
+      animation: zoomBoom 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards, glowFlicker 1s infinite 1.2s;
+    }
+
+    @keyframes zoomBoom {
+      0% {
+        transform: scale(0) rotate(-5deg);
+        opacity: 0;
+        text-shadow: 0 0 0px white;
+      }
+      50% {
+        transform: scale(1.15) rotate(2deg);
+        text-shadow: 0 0 20px white, 0 0 40px cyan, 0 0 80px blue;
+      }
+      100% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+        text-shadow:
+          0 0 5px white,
+          0 0 15px white,
+          0 0 40px blue,
+          0 0 80px blue;
+      }
+    }
+
+    @keyframes glowFlicker {
+      0%, 100% { opacity: 1; }
+      20%, 55% { opacity: 0.7; text-shadow: none; }
+    }
+
+    .blue {
+      color: cyan;
+      animation: flickerD 1s infinite;
+    }
+
+    @keyframes flickerD {
+      0%, 100% { opacity: 1; }
+      20%, 55% { opacity: 0.2; }
+    }
+
+    #subhead {
+      color: #0ff;
+      font-size: 28px;
+      margin-top: -20px;
+      margin-bottom: 40px;
+      text-shadow: 0 0 10px #0ff;
+    }
+
+    button {
+      font-family: 'Major Mono Display', monospace;
+      font-size: 22px;
+      padding: 18px 40px;
+      margin: 15px;
+      background: black;
+      color: white;
+      border: 3px solid white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: white;
+      color: black;
+      box-shadow: 0 0 25px cyan;
+      animation: zap 0.3s;
+    }
+
+    @keyframes zap {
+      50% { transform: scale(1.2) rotate(-3deg); }
+    }
+
+    /* MARQUEE */
+    .marquee {
+      position: fixed;
+      bottom: 120px;
+      width: 100%;
+      color: #0f0;
+      font-size: 20px;
+      text-shadow: 0 0 5px #0f0;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    .marquee span {
+      display: inline-block;
+      padding-left: 100%;
+      animation: scroll 15s linear infinite;
+    }
+
+    @keyframes scroll {
+      from { transform: translateX(0); }
+      to { transform: translateX(-100%); }
+    }
+
+    /* RIDDLE TERMINAL */
+    #riddle-box {
+      position: fixed;
+      bottom: 30px;
+      width: 100%;
+      text-align: center;
+    }
+
+    #riddle {
+      font-size: 16px;
+      margin-bottom: 8px;
+      color: #0ff;
+    }
+
+    input {
+      background: black;
+      border: 2px solid cyan;
+      color: cyan;
+      padding: 8px;
+      width: 260px;
+      font-family: "Courier New", monospace;
+      text-align: center;
+    }
+
+    input:focus {
+      outline: none;
+      box-shadow: 0 0 15px cyan;
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="stars"></canvas>
+
+  <h1>
+    CRYPTI<span class="flashBlueD blue">D</span> ARCA<span class="blue">D</span>E
+  </h1>
+
+
+  <div>
+    <button onclick="location.href='games-main.html'">Games</button>
+    <button onclick="location.href='case-studies-main.html'">Case Studies</button>
+    <button onclick="location.href='toys.html'">Toys</button>
+ </div>
+
+  <!-- MARQUEE -->
+  <div class="marquee">
+    <span>WELCOME TO CRYPTID ARCADE • A GAMIFIED CYBERSECURITY TRAINING AND SIMULATION ENVIRONMENT DESIGNED TO TEACH BLUE-TEAM SKILLS • </span>
+  </div>
+
+  <!-- RIDDLE -->
+  <div id="riddle-box">
+    <div id="riddle">
+    </div>
+    <input id="answer" placeholder="ENTER RIDDLE ANSWER">
+  </div>
+
+  <script>
+    /* D -> C glitch */
+    const flashBlueD = document.querySelector('.flashBlueD');
+    setInterval(() => {
+      if (Math.random() < 0.05) {
+        flashBlueD.textContent = 'C';
+        setTimeout(() => flashBlueD.textContent = 'D', 300);
+      }
+    }, 200);
+
+    /* Riddle logic */
+    document.getElementById('answer').addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        const answer = e.target.value.toLowerCase().trim();
+        if (answer === 'echo') {
+          window.location.href = 'alien-speakeasy.html';
+        } else {
+          e.target.value = '';
+        }
+      }
+    });
+
+    /* Pixel starfield */
+    const canvas = document.getElementById('stars');
+    const ctx = canvas.getContext('2d');
+    let stars = [];
+
+    function initStars() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      stars = Array.from({ length: 150 }, () => ({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        size: Math.random() * 2 + 1,
+        speed: Math.random() * 0.6 + 0.2
+      }));
+    }
+
+    function animateStars() {
+      ctx.fillStyle = 'black';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = 'white';
+      stars.forEach(s => {
+        ctx.fillRect(s.x, s.y, s.size, s.size);
+        s.x -= s.speed;
+        if (s.x < 0) s.x = canvas.width;
+      });
+      requestAnimationFrame(animateStars);
+    }
+
+    window.addEventListener('resize', initStars);
+    initStars();
+    animateStars();
+  </script>
+</body>
+</html>

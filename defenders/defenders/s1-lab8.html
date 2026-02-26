@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DEFENDERS — Lab 8: Adversary Simulation</title>
+
+<style>
+
+body {
+  background:#000;
+  color:#00ffcc;
+  font-family:'Courier New', monospace;
+  padding:20px;
+}
+
+.panel {
+  border:1px solid #00ffcc;
+  padding:18px;
+  margin:20px 0;
+  background:rgba(0,0,0,.9);
+}
+
+button {
+  background:#000;
+  border:1px solid #00ffcc;
+  color:#00ffcc;
+  padding:10px 16px;
+  cursor:pointer;
+}
+
+button:hover { background:#002; }
+
+.log {
+  border:1px solid #00ffcc;
+  background:#001;
+  height:260px;
+  overflow-y:auto;
+  padding:10px;
+  font-size:.85rem;
+}
+
+.hidden { display:none; }
+
+.boot {
+  font-size:1.2rem;
+  min-height:120px;
+}
+
+.typing::after {
+  content:"_";
+  animation:blink 1s infinite;
+}
+
+@keyframes blink { 50%{opacity:0;} }
+
+.attack-step {
+  border:1px solid #00ffcc;
+  padding:10px;
+  margin:10px 0;
+  cursor:pointer;
+}
+
+.attack-step:hover { background:#002; }
+
+#cookie {
+  position:fixed;
+  right:20px;
+  top:20px;
+  width:240px;
+  border:1px solid #00ffcc;
+  padding:12px;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>LAB 8 — Mirror Node: Red vs Blue</h1>
+
+<div class="boot typing" id="boot"></div>
+
+<div class="panel hidden" id="mission">
+<h2>Mission: Defend Against Simulated Intrusion</h2>
+<p>
+A Red Team simulation has been launched inside the Mirror Node.  
+You must detect, contain, and neutralize the attack chain.
+</p>
+<button onclick="start()">Enter Simulation</button>
+</div>
+
+<div class="panel hidden" id="phase1">
+<h3>Phase 1: Initial Access</h3>
+<p>Red Team attempts phishing-based compromise.</p>
+
+<div class="attack-step" onclick="detect(true)">
+Correlate suspicious login + email metadata
+</div>
+
+<div class="attack-step" onclick="detect(false)">
+Wait for more alerts
+</div>
+
+</div>
+
+<div class="panel hidden" id="phase2">
+<h3>Phase 2: Privilege Escalation</h3>
+<p>Red Team attempting token manipulation.</p>
+
+<div class="attack-step" onclick="contain(true)">
+Isolate compromised account immediately
+</div>
+
+<div class="attack-step" onclick="contain(false)">
+Monitor quietly
+</div>
+
+</div>
+
+<div class="panel hidden" id="phase3">
+<h3>Phase 3: Lateral Movement</h3>
+<p>Abnormal SMB traffic detected.</p>
+
+<div class="attack-step" onclick="respond(true)">
+Segment affected subnet
+</div>
+
+<div class="attack-step" onclick="respond(false)">
+Block one IP only
+</div>
+
+</div>
+
+<div class="panel hidden" id="phase4">
+<h3>Phase 4: Data Exfiltration Attempt</h3>
+<p>Outbound encrypted traffic spike.</p>
+
+<div class="attack-step" onclick="finalDefense(true)">
+Block egress + preserve logs
+</div>
+
+<div class="attack-step" onclick="finalDefense(false)">
+Throttle bandwidth
+</div>
+
+</div>
+
+<div class="panel hidden" id="success">
+<h2>Simulation Complete</h2>
+<p>
+You successfully defended the Mirror Node.  
+Red Team neutralized.  
+Strategic defense level achieved.
+</p>
+
+<button onclick="returnDashboard()">Return to Dashboard</button>
+</div>
+
+<div class="log" id="log"></div>
+
+<div class="panel">
+<h3>Strategic Defense Score</h3>
+<p id="score">75%</p>
+</div>
+
+<div id="cookie">🐕 Cookie: Simulation ready.</div>
+
+<script>
+
+let score = 75;
+
+function log(msg){
+  document.getElementById("log").innerHTML += "> " + msg + "<br>";
+}
+
+function update(val){
+  score += val;
+  document.getElementById("score").innerText = score + "%";
+}
+
+function cookie(msg){
+  document.getElementById("cookie").innerText = "🐕 Cookie: " + msg;
+}
+
+function typeBoot(){
+  let text = `
+MIRROR NODE ACTIVATED.
+
+Darwin fragment:
+"Understand the attacker.
+Outthink them."
+`;
+  let i = 0;
+  let el = document.getElementById("boot");
+
+  function type(){
+    if(i < text.length){
+      el.innerHTML += text[i];
+      i++;
+      setTimeout(type,20);
+    } else {
+      el.classList.remove("typing");
+      document.getElementById("mission").classList.remove("hidden");
+    }
+  }
+  type();
+}
+
+function start(){
+  document.getElementById("phase1").classList.remove("hidden");
+  log("Red Team simulation started.");
+  cookie("Initial access phase detected.");
+}
+
+function detect(correct){
+  if(correct){
+    log("Phishing attack identified early.");
+    update(5);
+    cookie("Move to escalation phase.");
+    document.getElementById("phase1").classList.add("hidden");
+    document.getElementById("phase2").classList.remove("hidden");
+  } else {
+    log("Delayed detection.");
+    update(-10);
+  }
+}
+
+function contain(correct){
+  if(correct){
+    log("Privilege escalation contained.");
+    update(5);
+    cookie("Lateral movement phase incoming.");
+    document.getElementById("phase2").classList.add("hidden");
+    document.getElementById("phase3").classList.remove("hidden");
+  } else {
+    log("Escalation progressed.");
+    update(-10);
+  }
+}
+
+function respond(correct){
+  if(correct){
+    log("Subnet segmented.");
+    update(5);
+    cookie("Exfiltration attempt detected.");
+    document.getElementById("phase3").classList.add("hidden");
+    document.getElementById("phase4").classList.remove("hidden");
+  } else {
+    log("Containment incomplete.");
+    update(-10);
+  }
+}
+
+function finalDefense(correct){
+  if(correct){
+    log("Data exfiltration blocked.");
+    update(10);
+    cookie("Simulation victory.");
+    document.getElementById("phase4").classList.add("hidden");
+    document.getElementById("success").classList.remove("hidden");
+  } else {
+    log("Partial data loss simulated.");
+    update(-15);
+  }
+}
+
+function returnDashboard(){
+  window.location.href = "dashboard.html";
+}
+
+typeBoot();
+
+</script>
+
+</body>
+</html>
+```
+

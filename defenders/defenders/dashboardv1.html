@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>THE DEFENDERS - DASHBOARD</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+:root {
+  --bg: #000000;
+  --fg: #00b3b3;
+  --dim: #008080;
+  --highlight: #00ffff;
+  --boss-color: #ff5555;
+  --branch-color: rgba(0,255,255,0.3);
+  --energy-color: #00ffff;
+}
+
+html, body {
+  margin:0; padding:0;
+  width:100%; height:100%;
+  background:var(--bg);
+  font-family:"Courier New", monospace;
+  color:var(--fg);
+  overflow:hidden;
+}
+
+.dashboard { position:relative; width:100%; height:100%; }
+
+.dashboard-header {
+  position:absolute; top:10px; width:100%; text-align:center;
+  font-size:28px; text-shadow:0 0 5px var(--fg); z-index:2;
+}
+
+.id-node-container {
+  position:absolute; bottom:40px; left:50%; transform:translateX(-50%);
+  width:300px; height:30px;
+}
+
+.id-node-label { font-size:16px; color:var(--dim); margin-bottom:5px; text-align:center; }
+.id-node {
+  width:0; height:30px;
+  background:linear-gradient(90deg,#00b3b3,#00ffff);
+  border-radius:5px;
+  box-shadow:0 0 10px #00b3b3;
+  position:relative;
+  overflow:hidden;
+  transition: width 0.5s ease;
+}
+.id-node.glow { box-shadow:0 0 20px #00ffff,0 0 40px #00b3b3; }
+
+.node-icon {
+  position:absolute; right:10px; top:50%; transform:translateY(-50%);
+  color:var(--fg); font-weight:bold;
+  text-shadow:0 0 5px #00ffff,0 0 10px #00b3b3;
+  animation: iconPulse 1s infinite alternate;
+}
+@keyframes iconPulse {
+  0% { transform:translateY(-50%) scale(1); text-shadow:0 0 5px #00ffff,0 0 10px #00b3b3; }
+  50% { transform:translateY(-50%) scale(1.1); text-shadow:0 0 10px #00ffff,0 0 15px #00b3b3; }
+  100% { transform:translateY(-50%) scale(1); text-shadow:0 0 5px #00ffff,0 0 10px #00b3b3; }
+}
+
+/* Labs */
+.lab {
+  width:80px; height:80px;
+  background:#003333; border:2px solid var(--dim); border-radius:50%;
+  display:flex; align-items:center; justify-content:center; text-align:center;
+  cursor:pointer; transition:all 0.3s ease; color:var(--fg); font-weight:bold; font-size:16px;
+  position:absolute; z-index:2;
+}
+.lab:hover { border-color:var(--highlight); transform:scale(1.1); }
+.lab.completed { background:var(--highlight); color:#000; }
+.lab.boss { background:var(--boss-color); border-color:#ff8888; }
+
+/* Branch lines */
+.branch { position:absolute; height:4px; background:var(--branch-color); transform-origin:top left; border-radius:2px; z-index:1; }
+.energy { position:absolute; height:4px; background:var(--energy-color); transform-origin:top left; border-radius:2px; z-index:3; width:0; transition:width 0.3s ease; }
+
+/* Cookie OS floating box */
+.cookie-box {
+  position:absolute; bottom:20px; right:20px;
+  background:#001111; border:2px solid var(--fg); border-radius:10px;
+  padding:15px; width:220px; font-size:14px; color:var(--fg);
+  text-shadow:0 0 5px var(--highlight); box-shadow:0 0 10px var(--highlight); cursor:move;
+}
+.cookie-box h4 { margin:0 0 10px 0; font-size:16px; color:var(--highlight); }
+.cookie-box p { margin:0; line-height:1.4; }
+</style>
+</head>
+<body>
+<div class="dashboard">
+  <div class="dashboard-header">THE DEFENDERS DASHBOARD</div>
+
+  <div class="id-node-container">
+    <div class="id-node-label">ID Node Status</div>
+    <div class="id-node" id="idNode">
+      <div class="node-icon" id="nodeIcon">ID</div>
+    </div>
+  </div>
+
+  <div id="labsContainer"></div>
+
+  <div class="cookie-box" id="cookieBox">
+    <h4>Cookie OS</h4>
+    <p id="cookieMessage">Welcome! Click on a lab to build your network nodes.</p>
+  </div>
+</div>
+
+<script>
+const labsContainer=document.getElementById('labsContainer');
+const cookieMessageEl=document.getElementById('cookieMessage');
+const idNode=document.getElementById('idNode');
+
+const totalLabs=10;
+let completedLabs=0;
+
+const labsPerRow=5;
+const labSpacingX=180;
+const labSpacingY=150;
+const labWidth=80;
+const labHeight=80;
+const labElements=[];
+
+// Centering calculation
+const startX=(window.innerWidth - (labsPerRow-1)*labSpacingX - labWidth)/2;
+const startY=(window.innerHeight - 2*labSpacingY - labHeight)/2;
+
+// Create labs
+for(let i=0;i<totalLabs;i++){
+  const lab=document.createElement('div');
+  lab.className='lab';
+  lab.textContent=i+1;
+  if(i===9) lab.classList.add('boss');
+
+  const row=Math.floor(i/labsPerRow);
+  const col=i%labsPerRow;
+
+  lab.style.left=(startX + col*labSpacingX)+'px';
+  lab.style.top=(startY + row*labSpacingY)+'px';
+  lab.dataset.index=i;
+  labsContainer.appendChild(lab);
+  labElements.push(lab);
+
+  lab.addEventListener('click',()=>{
+    if(!lab.classList.contains('completed')){
+      lab.classList.add('completed');
+      completedLabs++;
+      updateIDNode();
+      showCookieMessage(i+1);
+      drawBranches(lab); // Only draw relevant branches
+      animateEnergyCascade(lab);
+    }
+  });
+}
+
+// Draw only branches from clicked lab
+function drawBranches(clickedLab){
+  document.querySelectorAll('.branch').forEach(b=>b.remove());
+  const index=parseInt(clickedLab.dataset.index);
+  const row=Math.floor(index/labsPerRow);
+  const col=index%labsPerRow;
+  const nextRowStart=(row+1)*labsPerRow;
+  const nextRowEnd=Math.min(nextRowStart+labsPerRow,totalLabs);
+
+  for(let j=nextRowStart;j<nextRowEnd;j++){
+    const start=clickedLab;
+    const end=labElements[j];
+    const x1=start.offsetLeft+labWidth/2, y1=start.offsetTop+labHeight/2;
+    const x2=end.offsetLeft+labWidth/2, y2=end.offsetTop+labHeight/2;
+    const dx=x2-x1, dy=y2-y1, length=Math.sqrt(dx*dx+dy*dy), angle=Math.atan2(dy,dx)*180/Math.PI;
+    const branch=document.createElement('div');
+    branch.className='branch';
+    branch.style.width=length+'px';
+    branch.style.left=x1+'px';
+    branch.style.top=y1+'px';
+    branch.style.transform=`rotate(${angle}deg)`;
+    document.body.appendChild(branch);
+  }
+}
+
+// Cascading energy to connected labs and then ID Node
+function animateEnergyCascade(clickedLab){
+  const index=parseInt(clickedLab.dataset.index);
+  const row=Math.floor(index/labsPerRow);
+  const col=index%labsPerRow;
+  const nextRowStart=(row+1)*labsPerRow;
+  const nextRowEnd=Math.min(nextRowStart+labsPerRow,totalLabs);
+
+  nextRowStartLoop(nextRowStart,nextRowEnd,clickedLab);
+}
+
+// Recursive animation for smooth cascade
+function nextRowStartLoop(start,end,fromLab){
+  for(let j=start;j<end;j++){
+    const startLab=fromLab;
+    const endLab=labElements[j];
+    animateSingleEnergy(startLab,endLab,()=>{
+      // If last row, animate to ID Node
+      if(j>=totalLabs-1){
+        animateSingleEnergy(endLab,idNode,null);
+      }
+    });
+  }
+}
+
+function animateSingleEnergy(startLab,endLab,callback){
+  const x1=startLab.offsetLeft+labWidth/2, y1=startLab.offsetTop+labHeight/2;
+  const x2=endLab.offsetLeft+labWidth/2, y2=endLab.offsetTop+labHeight/2;
+  const dx=x2-x1, dy=y2-y1, length=Math.sqrt(dx*dx+dy*dy), angle=Math.atan2(dy,dx)*180/Math.PI;
+
+  const energy=document.createElement('div');
+  energy.className='energy';
+  energy.style.left=x1+'px';
+  energy.style.top=y1+'px';
+  energy.style.transform=`rotate(${angle}deg)`;
+  document.body.appendChild(energy);
+
+  energy.animate([{width:'0px'},{width:length+'px'}],{duration:400,easing:'ease-out'})
+    .onfinish=()=>{
+      energy.remove();
+      if(callback) callback();
+    };
+}
+
+function updateIDNode(){
+  const progress=(completedLabs/totalLabs)*100;
+  idNode.style.width=progress+'%';
+  idNode.classList.add('glow');
+  setTimeout(()=>idNode.classList.remove('glow'),1000);
+}
+
+function showCookieMessage(num){
+  if(num===10) cookieMessageEl.textContent="Boss Lab complete! Network fully online!";
+  else cookieMessageEl.textContent=`Lab ${num} complete. Network expanding...`;
+}
+
+// Cookie OS draggable
+const cookieBox=document.getElementById('cookieBox');
+cookieBox.onmousedown=function(e){
+  e.preventDefault();
+  let shiftX=e.clientX-cookieBox.getBoundingClientRect().left;
+  let shiftY=e.clientY-cookieBox.getBoundingClientRect().top;
+  function moveAt(pageX,pageY){
+    const newX=Math.min(window.innerWidth-cookieBox.offsetWidth, Math.max(0,pageX-shiftX));
+    const newY=Math.min(window.innerHeight-cookieBox.offsetHeight, Math.max(0,pageY-shiftY));
+    cookieBox.style.left=newX+'px';
+    cookieBox.style.top=newY+'px';
+  }
+  function onMouseMove(e){ moveAt(e.pageX,e.pageY); }
+  document.addEventListener('mousemove',onMouseMove);
+  cookieBox.onmouseup=function(){document.removeEventListener('mousemove',onMouseMove);cookieBox.onmouseup=null;};
+};
+cookieBox.ondragstart=()=>false;
+</script>
+</body>
+</html>

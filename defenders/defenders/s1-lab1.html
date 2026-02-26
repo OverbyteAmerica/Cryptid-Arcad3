@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Defenders Guild — Season 1 Lab 1</title>
+
+<style>
+body {
+  background: black;
+  color: #00ffcc;
+  font-family: monospace;
+  padding: 20px;
+}
+
+/* BOOT */
+.boot {
+  font-size: 1.3rem;
+  margin-bottom: 20px;
+}
+
+/* PANELS */
+.panel {
+  border: 1px solid #00ffcc;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+/* LAB NODES */
+.node {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  margin-top: 15px;
+}
+
+.desc {
+  width: 60%;
+  font-size: .9rem;
+  opacity: .85;
+}
+
+button {
+  background: black;
+  border: 1px solid #00ffcc;
+  color: #00ffcc;
+  padding: 10px;
+  cursor: pointer;
+  width: 40%;
+}
+
+button:hover {
+  background: #002;
+}
+
+.hidden {
+  display: none;
+}
+
+/* TERMINAL LOG */
+.log {
+  background: #001;
+  height: 260px;
+  overflow: auto;
+  padding: 10px;
+  margin-top: 20px;
+}
+
+.command {
+  font-size: .8rem;
+  opacity: .7;
+  margin-top: 5px;
+}
+
+/* COOKIE AI */
+
+#cookie {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 260px;
+  border: 1px solid #00ffcc;
+  background: #000;
+  padding: 12px;
+  box-shadow: 0 0 18px rgba(0,255,204,.5);
+  font-size: .9rem;
+  z-index: 9999;
+  border-radius: 8px;
+}
+
+/* subtle cyber glass */
+#cookie::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    rgba(0,255,204,0.05),
+    transparent
+  );
+  pointer-events: none;
+}
+
+#cookie * {
+  color: #00ffcc;
+}
+
+#cookie-avatar {
+  font-size: 1.6rem;
+  margin-bottom: 6px;
+}
+
+#cookie-text {
+  opacity: .95;
+  line-height: 1.4;
+}
+</style>
+</head>
+
+<body>
+
+<div id="boot" class="boot"></div>
+
+<div id="lab" class="hidden">
+
+<h2>Orientation Lab 1 — The Broken Network</h2>
+
+<div class="panel">
+
+<p>
+The Blowout shattered global infrastructure. Hospitals and supply chains collapsed.
+The Defenders Guild built this system to recruit protectors capable of stabilizing damaged networks.
+</p>
+
+<p>
+You do not need experience. Follow the requests below and learn as you go.
+Each action reflects real cybersecurity work.
+</p>
+
+<p>
+The system is requesting assistance. Your activity below represents defensive actions used in real environments.
+</p>
+
+</div>
+
+<div class="panel">
+
+<h3>Node Cluster 01 — Stabilization</h3>
+
+<div class="node">
+<button onclick="scan()">
+Scan Network
+<div class="command">&lt;nmap 10.0.0.0/24&gt;</div>
+</button>
+
+<div class="desc">
+Discover devices and services. Understanding the network is the first step in defense.
+</div>
+</div>
+
+<div class="node">
+<button onclick="capture()">
+Capture Traffic
+<div class="command">&lt;tcpdump -i eth0&gt;</div>
+</button>
+
+<div class="desc">
+Observe real traffic and detect anomalies or hidden threats.
+</div>
+</div>
+
+<div class="node">
+<button onclick="access()">
+Test Secure Access
+<div class="command">&lt;ssh defender@node01&gt;</div>
+</button>
+
+<div class="desc">
+Validate secure authentication and encrypted communication.
+</div>
+</div>
+
+</div>
+
+<div class="panel hidden" id="complete">
+<h3>System Stabilized</h3>
+<p>Orientation complete. Defender identity verified.</p>
+<button onclick="returnDash()">Return to Dashboard</button>
+</div>
+
+<div class="log" id="log"></div>
+
+</div>
+
+<!-- COOKIE AI -->
+<div id="cookie">
+  <div id="cookie-avatar">🐕</div>
+  <div id="cookie-text">...</div>
+</div>
+
+<script>
+let progress = 0;
+
+/* LOG */
+function log(msg) {
+  const l = document.getElementById('log');
+  l.innerHTML += msg + "<br>";
+  l.scrollTop = l.scrollHeight;
+}
+
+/* COOKIE */
+function cookie(msg) {
+  document.getElementById("cookie-text").innerText = msg;
+}
+
+/* AWAKENING */
+setTimeout(()=>{
+  cookie("Hello… I think I’m online. Are you the new Defender?");
+}, 2500);
+
+/* ACTIONS */
+
+function scan() {
+  cookie("Great choice. Mapping the network is always the first step.");
+  log("defender@boot:~$ nmap 10.0.0.0/24");
+  log("Starting Nmap scan...");
+  log("10.0.0.12 → ssh, https");
+  log("10.0.0.18 → database");
+  log("WARNING: External scan detected.");
+  progress++;
+  check();
+}
+
+function capture() {
+  cookie("Watching traffic reveals hidden attackers.");
+  log("defender@boot:~$ tcpdump -i eth0");
+  log("Listening...");
+  log("Encrypted packet stream detected.");
+  log("Recovered fragment:");
+  log("'They are already inside.'");
+  progress++;
+  check();
+}
+
+function access() {
+  cookie("Secure access protects identities. You're doing well.");
+  log("defender@boot:~$ ssh defender@node01");
+  log("Authenticating...");
+  log("Secure channel established.");
+  progress++;
+  check();
+}
+
+/* COMPLETION */
+function check() {
+  if(progress >= 3) {
+    document.getElementById('complete').classList.remove('hidden');
+    localStorage.setItem('s1lab1', 'complete');
+    cookie("Good work. The network trusts you.");
+  }
+}
+
+function returnDash() {
+  window.location.href = "defenders-dashboard.html";
+}
+
+/* BOOT ONLY ONCE */
+const text = "You don’t join the Defenders. You survive long enough to be invited.";
+
+if(!localStorage.getItem("booted")) {
+  let i = 0;
+
+  function boot() {
+    if(i < text.length) {
+      document.getElementById('boot').innerHTML += text.charAt(i);
+      i++;
+      setTimeout(boot, 35);
+    } else {
+      localStorage.setItem("booted", "true");
+      setTimeout(()=>{
+        document.getElementById('lab').classList.remove('hidden');
+      }, 900);
+    }
+  }
+
+  boot();
+} else {
+  document.getElementById('lab').classList.remove('hidden');
+}
+</script>
+
+</body>
+</html>

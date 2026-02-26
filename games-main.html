@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CRYPTID ARCADE - GAMES</title>
+  <link href="https://fonts.googleapis.com/css2?family=Major+Mono+Display&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      font-family: 'Major Mono Display', monospace;
+      background-color: black;
+      color: white;
+      text-align: center;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    canvas { position: fixed; top:0; left:0; z-index:-1; }
+
+    h1 {
+      font-size: 90px;
+      color: cyan;
+      text-shadow: 0 0 5px cyan, 0 0 15px cyan, 0 0 30px cyan;
+      animation: glowFlicker 1s infinite;
+      margin-top: 60px;
+    }
+
+    @keyframes glowFlicker {
+      0%,100% {opacity:1;}
+      20%,55% {opacity:0.7;text-shadow:none;}
+    }
+
+    #subhead {
+      font-size:28px;
+      color:#0ff;
+      text-shadow:0 0 10px #0ff, 0 0 20px #0ff;
+      margin-bottom:40px;
+    }
+
+    .button-container {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      flex-wrap: wrap;
+      padding: 20px;
+    }
+
+    /* GAME CARD STYLE */
+    .game-card {
+      width: 400px;
+      padding: 25px;
+      border: 3px solid white;
+      background: black;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .game-card:hover {
+      background: white;
+      color: black;
+      box-shadow: 0 0 20px cyan, 0 0 40px cyan;
+      transform: scale(1.05);
+    }
+
+    .game-title {
+      font-size: 26px;
+      margin-bottom: 15px;
+      font-family: 'Major Mono Display', monospace;
+    }
+
+    .game-description {
+      font-family: Arial, Helvetica, sans-serif; /* simpler font */
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    .back-button {
+      font-size:22px;
+      padding:18px 40px;
+      margin:15px;
+      cursor:pointer;
+      background:black;
+      color:white;
+      border:3px solid white;
+      font-family:'Major Mono Display', monospace;
+    }
+
+    .back-button:hover {
+      color:black;
+      background:white;
+      box-shadow:0 0 20px cyan,0 0 40px cyan;
+    }
+
+  </style>
+</head>
+<body>
+  <canvas id="stars"></canvas>
+
+  <h1>GAMES</h1>
+  <div id="subhead">Enter the Cryptid Arcade Challenge</div>
+
+  <div class="button-container">
+
+    <!-- DEFENDERS GAME CARD -->
+    <div class="game-card" onclick="location.href='defenders/defenders/defenders-start.html'">
+      <div class="game-title">THE DEFENDERS</div>
+      <div class="game-description">
+        After a global blackout fractures the grid, hidden threats move through the network.
+        <br><br>
+        As a newly activated Defender, you will investigate breaches, track adversaries,
+        and restore trust to compromised systems.
+        <br><br>
+        Learn real cybersecurity skills while uncovering the truth.
+      </div>
+    </div>
+
+  </div>
+
+  <button class="back-button" onclick="location.href='index.html'">Back to Arcade</button>
+
+  <script>
+    // Pixel starfield
+    const canvas = document.getElementById('stars');
+    const ctx = canvas.getContext('2d');
+    let stars = [];
+
+    function initStars(){
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      stars = Array.from({length:150}, () => ({
+        x: Math.random()*canvas.width,
+        y: Math.random()*canvas.height,
+        size: Math.random()*2 + 1,
+        speed: Math.random()*0.6 + 0.2
+      }));
+    }
+
+    function animateStars(){
+      ctx.fillStyle = 'black';
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.fillStyle = 'white';
+      stars.forEach(s=>{
+        ctx.fillRect(s.x,s.y,s.size,s.size);
+        s.x -= s.speed;
+        if(s.x < 0) s.x = canvas.width;
+      });
+      requestAnimationFrame(animateStars);
+    }
+
+    window.addEventListener('resize', initStars);
+    initStars();
+    animateStars();
+  </script>
+</body>
+</html>

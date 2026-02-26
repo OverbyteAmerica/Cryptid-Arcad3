@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Defenders Boot</title>
+
+<style>
+  body {
+    margin: 0;
+    background: #000;
+    color: #00ff9c;
+    font-family: "Courier New", monospace;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+  }
+
+  #container {
+    width: 90%;
+    max-width: 800px;
+  }
+
+  #bootText {
+    white-space: pre-line;
+    font-size: 1.0rem;
+    line-height: 1.6rem;
+    min-height: 14rem;
+  }
+</style>
+</head>
+
+<body>
+
+<div id="container">
+  <div id="bootText"></div>
+</div>
+
+<script>
+
+const lines = [
+  "DEFENDERS network initializing...",
+  "Global Blackout confirmed. Civilization systems compromised.",
+  "Agent Usher engaged hostile forces. Signal lost.",
+  "Enemy presence detected inside global infrastructure.",
+  "Defenders core restored and awaiting activation.",
+  "Rebuilding secure resistance nodes worldwide.",
+  "Verification complete. Defender status granted.",
+  "Booting Defender OS. Preparing deployment.",
+  "You were not chosen by chance.",
+  "You don’t need to know everything.",
+  "You just need to take the first step."
+];
+
+const bootText = document.getElementById("bootText");
+let index = 0;
+
+function showNextLine() {
+  if (index < lines.length) {
+    bootText.textContent += lines[index] + "\n";
+    index++;
+    setTimeout(showNextLine, 700);
+  } else {
+    // small pause before redirect
+    setTimeout(() => {
+      window.location.href = "defenders-dashboard.html";
+    }, 1200);
+  }
+}
+
+showNextLine();
+
+</script>
+
+</body>
+</html>

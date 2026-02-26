@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>THE SPEAKEASY</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Major+Mono+Display&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      margin: 0;
+      background: black;
+      color: #0f0;
+      font-family: "Courier New", monospace;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* CRT Scanlines */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        to bottom,
+        rgba(0,0,0,0.15),
+        rgba(0,0,0,0.15) 1px,
+        transparent 1px,
+        transparent 3px
+      );
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* Scrollable terminal */
+    .terminal {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 30px;
+      height: 100vh;
+      overflow-y: auto;
+      animation: flicker 7s infinite;
+      box-sizing: border-box;
+    }
+
+    /* Hide scrollbar but allow scroll */
+    .terminal::-webkit-scrollbar {
+      width: 0;
+    }
+
+    @keyframes flicker {
+      0%, 100% { opacity: 1; }
+      97% { opacity: 0.85; }
+      98% { opacity: 0.4; }
+      99% { opacity: 0.9; }
+    }
+
+    h1 {
+      font-family: 'Major Mono Display', monospace;
+      color: cyan;
+      text-shadow: 0 0 15px cyan;
+      font-size: 48px;
+      margin-top: 10px;
+    }
+
+    .warning {
+      color: red;
+      animation: blink 1.2s infinite;
+      margin-bottom: 20px;
+    }
+
+    @keyframes blink {
+      50% { opacity: 0; }
+    }
+
+    .ascii {
+      color: #0ff;
+      white-space: pre;
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+
+    .alien { color: #0ff; }
+    .human { color: #0f0; }
+
+    .line {
+      margin: 12px 0;
+      min-height: 1.2em;
+    }
+
+    .menu {
+      border: 2px dashed cyan;
+      padding: 20px;
+      margin: 30px 0;
+    }
+
+    .menu h2 {
+      color: cyan;
+      text-shadow: 0 0 10px cyan;
+    }
+
+    .menu-item {
+      margin: 10px 0;
+    }
+
+    .input-box {
+      margin: 30px 0 60px;
+    }
+
+    input {
+      background: black;
+      border: 2px solid cyan;
+      color: cyan;
+      padding: 8px;
+      width: 300px;
+      font-family: "Courier New", monospace;
+      text-align: center;
+    }
+
+    input:focus {
+      outline: none;
+      box-shadow: 0 0 15px cyan;
+    }
+
+    .hint {
+      font-size: 14px;
+      opacity: 0.7;
+      margin-top: 10px;
+    }
+
+    #resume {
+      display: none;
+      border: 2px solid cyan;
+      padding: 20px;
+      margin-top: 30px;
+      color: cyan;
+    }
+
+    .glitch {
+      animation: glitch 0.15s infinite;
+    }
+
+    @keyframes glitch {
+      25% { transform: translate(2px, -2px); }
+      50% { transform: translate(-2px, 2px); }
+      75% { transform: translate(2px, 2px); }
+    }
+
+    .exit {
+      position: fixed;
+      bottom: 15px;
+      right: 20px;
+      color: cyan;
+      cursor: pointer;
+      text-decoration: underline;
+      z-index: 20;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="terminal" id="terminal">
+
+    <div class="warning">⚠ HUMAN DISGUISE REQUIRED ⚠</div>
+
+    <div class="ascii">
+      ⠀⠀⠀⠀⠀⢀⣴⣶⣦⡀
+      ⠀⠀⠀⠀⣠⣿⣿⣿⣿⣷⡀
+      ⠀⠀⠀⠀⣿⣿⣿⣿⣿⣿⡇
+      ⠀⠀⢀⣴⣿⣿⣿⣿⣿⣿⣿⣦
+      ⠀⠀⠈⠻⠿⠿⠿⠿⠿⠿⠟⠋
+    </div>
+
+    <h1>THE SPEAKEASY</h1>
+
+    <!-- Bartender dialogue -->
+    <div id="dialogue">
+      <div class="line alien" data-text="BARTENDER: You hear the echo. That means you belong."></div>
+      <div class="line alien" data-text="BARTENDER: Relax. Disguise stable. Mostly."></div>
+      <div class="line alien" data-text="BARTENDER: This bar exists between signals."></div>
+    </div>
+
+    <div class="menu">
+      <h2>DRINK MENU (PROJECT ARCHIVES)</h2>
+      <div class="menu-item">🛸 ROSWELL SHOT — Incident response & recovery</div>
+      <div class="menu-item">📡 DEAD SIGNAL — Network monitoring & detection</div>
+      <div class="menu-item">🧬 THE HYBRID — Creative + cybersecurity systems</div>
+      <div class="menu-item">👁 THE OBSERVER — Blue team analysis & logging</div>
+    </div>
+
+    <div class="input-box">
+      <div class="alien">BARTENDER: Password if you want deeper access.</div>
+      <input id="password" placeholder="ENTER PASSWORD">
+      <div class="hint">Hint: It protects networks and secrets.</div>
+    </div>
+
+    <div id="resume">
+      <div>ACCESS GRANTED.</div>
+      <div>IDENTITY VERIFIED: TRUSTED OPERATOR</div>
+      <br>
+      <div>▶ Resume Terminal Online</div>
+      <div>▶ Role: Security / Network / Creative Hybrid</div>
+      <div>▶ Status: Actively Exploring New Worlds</div>
+      <br>
+      <a href="resume.html" style="color: cyan;">OPEN FULL RESUME</a>
+    </div>
+
+  </div>
+
+  <div class="exit" onclick="location.href='index.html'">EXIT BACK TO ARCADE</div>
+
+  <script>
+    /* Typewriter effect */
+    const lines = document.querySelectorAll('.line');
+    let lineIndex = 0;
+
+    function typeLine(line, text, i = 0) {
+      if (i < text.length) {
+        line.textContent += text.charAt(i);
+        setTimeout(() => typeLine(line, text, i + 1), 30);
+      }
+    }
+
+    function startDialogue() {
+      if (lineIndex < lines.length) {
+        const line = lines[lineIndex];
+        const text = line.dataset.text;
+        typeLine(line, text);
+        lineIndex++;
+        setTimeout(startDialogue, 800);
+      }
+    }
+
+    startDialogue();
+
+    /* Password logic */
+    const passwordInput = document.getElementById('password');
+    const resume = document.getElementById('resume');
+    const terminal = document.getElementById('terminal');
+
+    passwordInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        if (passwordInput.value.toLowerCase().trim() === 'firewall') {
+          resume.style.display = 'block';
+          passwordInput.style.display = 'none';
+        } else {
+          terminal.classList.add('glitch');
+          setTimeout(() => terminal.classList.remove('glitch'), 400);
+          passwordInput.value = '';
+        }
+      }
+    });
+  </script>
+</body>
+</html>

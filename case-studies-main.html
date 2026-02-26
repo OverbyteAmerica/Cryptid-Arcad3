@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CRYPTID ARCADE — CASE STUDIES</title>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Major+Mono+Display&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: 'Major Mono Display', monospace;
+      background-color: black;
+      color: white;
+      text-align: center;
+      position: relative;
+      overflow-x: hidden;
+      overflow-y: auto;
+    }
+
+    canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: -1;
+    }
+
+    /* NAV BAR */
+    nav {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+    }
+
+    nav button {
+      font-size: 16px;
+      padding: 12px 26px;
+      margin: 0 10px;
+      cursor: pointer;
+      background: black;
+      color: white;
+      border: 3px solid white;
+      font-family: 'Major Mono Display', monospace;
+    }
+
+    nav button:hover {
+      color: black;
+      background: white;
+      box-shadow: 0 0 20px cyan, 0 0 40px cyan;
+    }
+
+    /* MAIN HEADER */
+    h1 {
+      font-size: 80px;
+      color: cyan;
+      text-shadow: 0 0 5px cyan, 0 0 15px cyan, 0 0 30px cyan;
+      animation: glowFlicker 1s infinite;
+      margin-top: 140px;
+    }
+
+    @keyframes glowFlicker {
+      0%, 100% { opacity: 1; }
+      20%, 55% { opacity: 0.7; text-shadow: none; }
+    }
+
+    /* SUBHEAD */
+    #subhead {
+      font-family: 'Space Mono', monospace;
+      font-size: 20px;
+      font-weight: 700;
+      color: cyan;
+      margin-bottom: 50px;
+      text-shadow: 0 0 10px rgba(0,255,255,0.4);
+      letter-spacing: 0.5px;
+    }
+
+    /* DASHBOARD GRID */
+    .dashboard {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      flex-wrap: wrap;
+      padding-bottom: 80px; /* scroll buffer */
+    }
+
+    .card {
+      width: 320px;
+      border: 3px solid cyan;
+      padding: 25px;
+      box-shadow: 0 0 20px rgba(0,255,255,0.4);
+      background: rgba(0,0,0,0.85);
+    }
+
+    .card h3 {
+      font-family: 'Space Mono', monospace;
+      font-size: 16px;
+      font-weight: 700;
+      color: cyan;
+      margin-bottom: 12px;
+      text-shadow: 0 0 6px rgba(0,255,255,0.3);
+    }
+
+    .card p {
+      font-family: 'Space Mono', monospace;
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    .card button {
+      font-size: 14px;
+      padding: 10px 24px;
+      cursor: pointer;
+      background: black;
+      color: white;
+      border: 2px solid white;
+      font-family: 'Space Mono', monospace;
+    }
+
+    .card button:hover {
+      background: white;
+      color: black;
+      box-shadow: 0 0 15px cyan;
+    }
+
+  </style>
+</head>
+
+<body>
+
+  <canvas id="stars"></canvas>
+
+  <!-- NAV -->
+  <nav>
+    <button onclick="location.href='index.html'">Back to Arcade</button>
+  </nav>
+
+  <!-- HEADER -->
+  <h1>CASE STUDIES</h1>
+
+  <!-- DASHBOARD -->
+  <div class="dashboard">
+
+    <div class="card">
+      <h3>EQUIFAX</h3>
+      <p>
+        A large-scale data breach caused by unpatched systems, exposing
+/        sensitive consumer information and reshaping breach disclosure laws.
+      </p>
+      <button onclick="location.href='equifax-case-studies.html'">Open File</button>
+    </div>
+
+    <div class="card">
+      <h3>FULTON COUNTY</h3>
+      <p>
+        A ransomware incident impacting government services and public trust,
+        highlighting weaknesses in municipal cyber defense.
+      </p>
+      <button onclick="location.href='fulton-co.html'">Open File</button>
+    </div>
+
+  </div>
+
+  <!-- STARFIELD SCRIPT -->
+  <script>
+    const canvas = document.getElementById('stars');
+    const ctx = canvas.getContext('2d');
+    let stars = [];
+    const numStars = 150;
+
+    function initStars() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      stars = [];
+      for (let i = 0; i < numStars; i++) {
+        stars.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          size: Math.random() * 2 + 1,
+          speed: Math.random() * 0.6 + 0.2
+        });
+      }
+    }
+
+    function animateStars() {
+      ctx.fillStyle = 'black';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = 'white';
+
+      stars.forEach(s => {
+        ctx.fillRect(s.x, s.y, s.size, s.size);
+        s.x -= s.speed;
+        if (s.x < 0) s.x = canvas.width;
+      });
+
+      requestAnimationFrame(animateStars);
+    }
+
+    window.addEventListener('resize', initStars);
+    initStars();
+    animateStars();
+  </script>
+
+</body>
+</html>
+

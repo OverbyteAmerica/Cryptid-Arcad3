@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DEFENDERS — Lab 5: Digital Forensics</title>
+
+<style>
+
+/* DEFENDERS STANDALONE STYLES */
+
+body {
+  background: #000;
+  color: #00ffcc;
+  font-family: 'Courier New', monospace;
+  padding: 20px;
+}
+
+.panel {
+  border: 1px solid #00ffcc;
+  padding: 18px;
+  margin: 20px 0;
+  background: rgba(0,0,0,.85);
+}
+
+button {
+  background: #000;
+  border: 1px solid #00ffcc;
+  color: #00ffcc;
+  padding: 10px 16px;
+  cursor: pointer;
+}
+
+button:hover { background:#002; }
+
+.log {
+  background:#001;
+  border:1px solid #00ffcc;
+  height:260px;
+  overflow-y:auto;
+  padding:10px;
+  font-size:.85rem;
+}
+
+.hidden { display:none; }
+
+#cookie {
+  position:fixed;
+  right:20px;
+  top:20px;
+  border:1px solid #00ffcc;
+  padding:12px;
+  width:240px;
+}
+
+.boot {
+  font-size:1.2rem;
+  min-height:120px;
+}
+
+.typing::after {
+  content:"_";
+  animation:blink 1s infinite;
+}
+
+@keyframes blink { 50%{opacity:0;} }
+
+.timeline-entry {
+  border:1px solid #00ffcc;
+  padding:10px;
+  margin:10px 0;
+  cursor:pointer;
+}
+
+.timeline-entry:hover {
+  background:#002;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>LAB 5 — Digital Forensics</h1>
+
+<div class="boot typing" id="boot"></div>
+
+<div class="panel hidden" id="mission">
+<h2>Mission: Reconstruct the Attack</h2>
+<p>
+The Byte Bug containment slowed the swarm.  
+But the origin of the breach remains unknown.  
+You must reconstruct the attack timeline and identify the root cause.
+</p>
+<button onclick="start()">Begin Investigation</button>
+</div>
+
+<div class="panel hidden" id="timeline">
+<h3>Recovered Artifacts</h3>
+<p>Select events in the correct order.</p>
+
+<div class="timeline-entry" onclick="select(1)">
+User login from 10.0.4.23
+</div>
+
+<div class="timeline-entry" onclick="select(2)">
+Credential replay detected
+</div>
+
+<div class="timeline-entry" onclick="select(3)">
+Unauthorized SMB lateral movement
+</div>
+
+<div class="timeline-entry" onclick="select(4)">
+Malware executed in temp directory
+</div>
+
+<div class="timeline-entry" onclick="select(5)">
+Phishing email opened by employee
+</div>
+
+</div>
+
+<div class="panel hidden" id="rootCause">
+<h3>Root Cause</h3>
+<p>What initiated the breach?</p>
+<button onclick="answer(true)">Phishing Email</button>
+<button onclick="answer(false)">Firewall Failure</button>
+<button onclick="answer(false)">Zero-Day Kernel Exploit</button>
+</div>
+
+<div class="panel hidden" id="success">
+<h2>Investigation Complete</h2>
+<p>
+Attack vector identified.  
+The Vault can now deploy preventative controls.
+</p>
+
+<button onclick="returnDashboard()">Return to Dashboard</button>
+</div>
+
+<div class="log" id="log"></div>
+
+<div class="panel">
+<h3>Evidence Integrity</h3>
+<p id="score">70%</p>
+</div>
+
+<div id="cookie">🐕 Cookie: Ready for forensic analysis.</div>
+
+<script>
+
+let evidence = 70;
+let correct = 1;
+
+function log(msg){
+  document.getElementById("log").innerHTML += "> " + msg + "<br>";
+}
+
+function update(val){
+  evidence += val;
+  document.getElementById("score").innerText = evidence + "%";
+}
+
+function cookie(msg){
+  document.getElementById("cookie").innerText = "🐕 Cookie: " + msg;
+}
+
+function typeBoot(){
+  let text = `
+FORENSIC MODE INITIALIZED.
+
+Darwin fragment:
+"To defend the future,
+you must understand the past."
+`;
+  let i = 0;
+  let el = document.getElementById("boot");
+
+  function type(){
+    if(i < text.length){
+      el.innerHTML += text[i];
+      i++;
+      setTimeout(type,20);
+    } else {
+      el.classList.remove("typing");
+      document.getElementById("mission").classList.remove("hidden");
+    }
+  }
+  type();
+}
+
+function start(){
+  document.getElementById("timeline").classList.remove("hidden");
+  log("Artifacts recovered from quarantine zone.");
+  cookie("Rebuild the attack chain.");
+}
+
+function select(order){
+  if(order === correct){
+    log("Correct event placed.");
+    update(5);
+    correct++;
+
+    if(correct > 5){
+      document.getElementById("timeline").classList.add("hidden");
+      document.getElementById("rootCause").classList.remove("hidden");
+      cookie("Attack path reconstructed.");
+    }
+
+  } else {
+    log("Timeline inconsistency detected.");
+    update(-5);
+    cookie("Review evidence.");
+  }
+}
+
+function answer(val){
+  if(val){
+    log("Root cause confirmed: phishing.");
+    update(10);
+    cookie("Future attacks can be prevented.");
+    document.getElementById("rootCause").classList.add("hidden");
+    document.getElementById("success").classList.remove("hidden");
+  } else {
+    log("Incorrect root cause.");
+    update(-10);
+    cookie("That does not match the evidence.");
+  }
+}
+
+function returnDashboard(){
+  window.location.href = "dashboard.html";
+}
+
+typeBoot();
+
+</script>
+
+</body>
+</html>
+```
+

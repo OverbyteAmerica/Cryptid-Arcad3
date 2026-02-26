@@ -1,0 +1,246 @@
+```html id="qh7x9m"
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DEFENDERS — Lab 7: Threat Hunting</title>
+
+<style>
+
+body {
+  background:#000;
+  color:#00ffcc;
+  font-family:'Courier New', monospace;
+  padding:20px;
+}
+
+.panel {
+  border:1px solid #00ffcc;
+  padding:18px;
+  margin:20px 0;
+  background:rgba(0,0,0,.9);
+}
+
+button {
+  background:#000;
+  border:1px solid #00ffcc;
+  color:#00ffcc;
+  padding:10px 16px;
+  cursor:pointer;
+}
+
+button:hover { background:#002; }
+
+.log {
+  border:1px solid #00ffcc;
+  background:#001;
+  height:260px;
+  overflow-y:auto;
+  padding:10px;
+  font-size:.85rem;
+}
+
+.hidden { display:none; }
+
+.boot {
+  font-size:1.2rem;
+  min-height:120px;
+}
+
+.typing::after {
+  content:"_";
+  animation:blink 1s infinite;
+}
+
+@keyframes blink { 50%{opacity:0;} }
+
+.query {
+  border:1px solid #00ffcc;
+  padding:10px;
+  margin:10px 0;
+  cursor:pointer;
+}
+
+.query:hover { background:#002; }
+
+#cookie {
+  position:fixed;
+  right:20px;
+  top:20px;
+  width:240px;
+  border:1px solid #00ffcc;
+  padding:12px;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>LAB 7 — Threat Hunting</h1>
+
+<div class="boot typing" id="boot"></div>
+
+<div class="panel hidden" id="mission">
+<h2>Mission: Hunt Without an Alert</h2>
+<p>
+Detection systems are stable.  
+But anomalous outbound traffic patterns suggest persistence.  
+You must form a hypothesis and investigate.
+</p>
+<button onclick="start()">Begin Hunt</button>
+</div>
+
+<div class="panel hidden" id="hypothesis">
+<h3>Choose a Hunting Hypothesis</h3>
+
+<div class="query" onclick="chooseHypothesis(true)">
+Suspicious outbound beaconing every 5 minutes
+</div>
+
+<div class="query" onclick="chooseHypothesis(false)">
+Single failed login attempt
+</div>
+
+<div class="query" onclick="chooseHypothesis(false)">
+Normal DNS traffic spike
+</div>
+
+</div>
+
+<div class="panel hidden" id="investigation">
+<h3>Investigate Logs</h3>
+<p>Pivot your investigation.</p>
+
+<button onclick="pivot(true)">Check process creation logs</button>
+<button onclick="pivot(false)">Review printer logs</button>
+<button onclick="pivot(false)">Check scheduled backups</button>
+
+</div>
+
+<div class="panel hidden" id="persistence">
+<h3>Persistence Identified</h3>
+<p>Malware using scheduled task for beaconing.</p>
+
+<button onclick="remediate(true)">Disable task + isolate host</button>
+<button onclick="remediate(false)">Ignore low volume traffic</button>
+
+</div>
+
+<div class="panel hidden" id="success">
+<h2>Threat Neutralized</h2>
+<p>
+You detected a threat before it triggered an alert.  
+The Vault evolves from reactive to proactive.
+</p>
+
+<button onclick="returnDashboard()">Return to Dashboard</button>
+</div>
+
+<div class="log" id="log"></div>
+
+<div class="panel">
+<h3>Hunter Confidence</h3>
+<p id="score">70%</p>
+</div>
+
+<div id="cookie">🐕 Cookie: Awaiting hypothesis.</div>
+
+<script>
+
+let confidence = 70;
+
+function log(msg){
+  document.getElementById("log").innerHTML += "> " + msg + "<br>";
+}
+
+function update(val){
+  confidence += val;
+  document.getElementById("score").innerText = confidence + "%";
+}
+
+function cookie(msg){
+  document.getElementById("cookie").innerText = "🐕 Cookie: " + msg;
+}
+
+function typeBoot(){
+  let text = `
+THREAT HUNT MODE ENABLED.
+
+Darwin fragment:
+"Not all danger announces itself.
+Seek patterns."
+`;
+  let i = 0;
+  let el = document.getElementById("boot");
+
+  function type(){
+    if(i < text.length){
+      el.innerHTML += text[i];
+      i++;
+      setTimeout(type,20);
+    } else {
+      el.classList.remove("typing");
+      document.getElementById("mission").classList.remove("hidden");
+    }
+  }
+  type();
+}
+
+function start(){
+  document.getElementById("hypothesis").classList.remove("hidden");
+  log("Anomalous outbound traffic pattern detected.");
+  cookie("Form a hypothesis.");
+}
+
+function chooseHypothesis(correct){
+  if(correct){
+    log("Beaconing hypothesis selected.");
+    update(5);
+    cookie("Investigate host behavior.");
+    document.getElementById("hypothesis").classList.add("hidden");
+    document.getElementById("investigation").classList.remove("hidden");
+  } else {
+    log("Weak hunting hypothesis.");
+    update(-5);
+  }
+}
+
+function pivot(correct){
+  if(correct){
+    log("Suspicious scheduled task discovered.");
+    update(10);
+    cookie("Persistence mechanism found.");
+    document.getElementById("investigation").classList.add("hidden");
+    document.getElementById("persistence").classList.remove("hidden");
+  } else {
+    log("No meaningful data from that pivot.");
+    update(-5);
+  }
+}
+
+function remediate(correct){
+  if(correct){
+    log("Scheduled task removed. Host isolated.");
+    update(10);
+    cookie("Threat neutralized proactively.");
+    document.getElementById("persistence").classList.add("hidden");
+    document.getElementById("success").classList.remove("hidden");
+  } else {
+    log("Threat persists in background.");
+    update(-10);
+  }
+}
+
+function returnDashboard(){
+  window.location.href = "dashboard.html";
+}
+
+typeBoot();
+
+</script>
+
+</body>
+</html>
+```
+

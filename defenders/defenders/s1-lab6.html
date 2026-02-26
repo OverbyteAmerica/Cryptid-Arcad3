@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>DEFENDERS — Lab 6: Detection Engineering</title>
+
+<style>
+
+/* DEFENDERS STANDALONE */
+
+body {
+  background:#000;
+  color:#00ffcc;
+  font-family:'Courier New', monospace;
+  padding:20px;
+}
+
+.panel {
+  border:1px solid #00ffcc;
+  padding:18px;
+  margin:20px 0;
+  background:rgba(0,0,0,.9);
+}
+
+button {
+  background:#000;
+  border:1px solid #00ffcc;
+  color:#00ffcc;
+  padding:10px 16px;
+  cursor:pointer;
+}
+
+button:hover { background:#002; }
+
+.log {
+  border:1px solid #00ffcc;
+  background:#001;
+  height:260px;
+  overflow-y:auto;
+  padding:10px;
+  font-size:.85rem;
+}
+
+.hidden { display:none; }
+
+.boot {
+  font-size:1.2rem;
+  min-height:120px;
+}
+
+.typing::after {
+  content:"_";
+  animation:blink 1s infinite;
+}
+
+@keyframes blink { 50%{opacity:0;} }
+
+.rule {
+  border:1px solid #00ffcc;
+  padding:10px;
+  margin:10px 0;
+  cursor:pointer;
+}
+
+.rule:hover {
+  background:#002;
+}
+
+#cookie {
+  position:fixed;
+  right:20px;
+  top:20px;
+  width:240px;
+  border:1px solid #00ffcc;
+  padding:12px;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>LAB 6 — Detection Engineering</h1>
+
+<div class="boot typing" id="boot"></div>
+
+<div class="panel hidden" id="mission">
+<h2>Mission: Build Better Detection</h2>
+<p>
+The Vault generates too many alerts. Real threats are being lost in noise.  
+You must tune detection rules and build a high-confidence alert system.
+</p>
+<button onclick="start()">Access Detection Engine</button>
+</div>
+
+<div class="panel hidden" id="alerts">
+<h3>Current Alert Feed</h3>
+<p>Identify which alerts should be prioritized.</p>
+
+<div class="rule" onclick="selectAlert(true)">
+Multiple failed logins followed by success
+</div>
+
+<div class="rule" onclick="selectAlert(false)">
+Single failed login attempt
+</div>
+
+<div class="rule" onclick="selectAlert(true)">
+Unusual login time + geographic anomaly
+</div>
+
+<div class="rule" onclick="selectAlert(false)">
+Normal scheduled backup traffic
+</div>
+
+</div>
+
+<div class="panel hidden" id="tuning">
+<h3>Tune Detection Rule</h3>
+<p>How should the system respond to credential abuse?</p>
+
+<button onclick="tune(true)">Correlate multiple signals</button>
+<button onclick="tune(false)">Trigger alert on every login</button>
+<button onclick="tune(false)">Ignore low confidence signals</button>
+
+</div>
+
+<div class="panel hidden" id="automation">
+<h3>Automation Strategy</h3>
+<p>Choose the best response workflow.</p>
+
+<button onclick="auto(true)">Alert + isolate account + notify SOC</button>
+<button onclick="auto(false)">Alert only</button>
+<button onclick="auto(false)">Block all users</button>
+
+</div>
+
+<div class="panel hidden" id="success">
+<h2>Detection System Upgraded</h2>
+<p>
+Signal clarity improved. The Vault now sees emerging threats earlier.
+</p>
+
+<button onclick="returnDashboard()">Return to Dashboard</button>
+</div>
+
+<div class="log" id="log"></div>
+
+<div class="panel">
+<h3>Detection Confidence</h3>
+<p id="score">65%</p>
+</div>
+
+<div id="cookie">🐕 Cookie: Detection systems online.</div>
+
+<script>
+
+let confidence = 65;
+let stage = 1;
+
+function log(msg){
+  document.getElementById("log").innerHTML += "> " + msg + "<br>";
+}
+
+function update(val){
+  confidence += val;
+  document.getElementById("score").innerText = confidence + "%";
+}
+
+function cookie(msg){
+  document.getElementById("cookie").innerText = "🐕 Cookie: " + msg;
+}
+
+function typeBoot(){
+  let text = `
+DETECTION ENGINE INITIALIZED.
+
+Darwin fragment:
+"Defense is not reaction.
+It is anticipation."
+`;
+  let i = 0;
+  let el = document.getElementById("boot");
+
+  function type(){
+    if(i < text.length){
+      el.innerHTML += text[i];
+      i++;
+      setTimeout(type,20);
+    } else {
+      el.classList.remove("typing");
+      document.getElementById("mission").classList.remove("hidden");
+    }
+  }
+  type();
+}
+
+function start(){
+  document.getElementById("alerts").classList.remove("hidden");
+  log("Alert overload detected.");
+  cookie("Find signal in the noise.");
+}
+
+function selectAlert(correct){
+  if(correct){
+    log("High-risk alert prioritized.");
+    update(5);
+  } else {
+    log("Low-value alert filtered.");
+    update(-5);
+  }
+
+  stage++;
+  if(stage > 4){
+    document.getElementById("alerts").classList.add("hidden");
+    document.getElementById("tuning").classList.remove("hidden");
+    cookie("Tune the detection logic.");
+  }
+}
+
+function tune(correct){
+  if(correct){
+    log("Correlation engine enabled.");
+    update(10);
+    cookie("Detection quality improved.");
+    document.getElementById("tuning").classList.add("hidden");
+    document.getElementById("automation").classList.remove("hidden");
+  } else {
+    log("Poor rule design.");
+    update(-10);
+  }
+}
+
+function auto(correct){
+  if(correct){
+    log("Automated containment workflow deployed.");
+    update(10);
+    cookie("Threat response accelerated.");
+    document.getElementById("automation").classList.add("hidden");
+    document.getElementById("success").classList.remove("hidden");
+  } else {
+    log("Inefficient response strategy.");
+    update(-10);
+  }
+}
+
+function returnDashboard(){
+  window.location.href = "dashboard.html";
+}
+
+typeBoot();
+
+</script>
+
+</body>
+</html>
+```
+

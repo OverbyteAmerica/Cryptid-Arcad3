@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CASE STUDY 02 — FULTON COUNTY</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: black;
+  color: white;
+  font-family: 'Inter', sans-serif;
+  overflow-y: auto;
+}
+
+canvas { position: fixed; top:0; left:0; z-index:-1; }
+
+nav {
+  display: flex;
+  justify-content: space-between;
+  padding: 20px 40px;
+  border-bottom: 2px solid cyan;
+}
+
+nav button {
+  background: black;
+  border: 2px solid cyan;
+  color: cyan;
+  padding: 10px 22px;
+  cursor: pointer;
+  font-family: 'Orbitron', sans-serif;
+}
+
+nav button:hover {
+  background: cyan;
+  color: black;
+  box-shadow: 0 0 20px cyan;
+}
+
+header {
+  text-align: center;
+  margin-top: 40px;
+}
+
+header h1 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 48px;
+  color: cyan;
+  text-shadow: 0 0 20px cyan;
+}
+
+header h2 {
+  font-size: 20px;
+  color: #9ff;
+}
+
+.dashboard {
+  max-width: 1200px;
+  margin: 60px auto;
+  padding: 20px;
+}
+
+.panel {
+  border: 2px solid cyan;
+  padding: 30px;
+  margin-bottom: 40px;
+  position: relative;
+  animation: fadeUp 0.8s ease forwards;
+}
+
+.panel::after {
+  content:'';
+  position:absolute;
+  inset:0;
+  background: linear-gradient(transparent, rgba(0,255,255,0.05), transparent);
+  animation: scan 4s linear infinite;
+  pointer-events:none;
+}
+
+@keyframes scan {
+  0% { opacity:0; }
+  50% { opacity:1; }
+  100% { opacity:0; }
+}
+
+.panel h3 {
+  font-family: 'Orbitron', sans-serif;
+  color: cyan;
+  margin-bottom: 15px;
+}
+
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(20px); }
+  to { opacity:1; transform:translateY(0); }
+}
+
+/* CIA TRIAD */
+.triad {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.triad-item {
+  border-left: 6px solid cyan;
+  padding: 15px 20px;
+  background: rgba(0,255,255,0.05);
+}
+
+/* SVG */
+svg { width:100%; }
+
+.node {
+  fill: black;
+  stroke: cyan;
+  stroke-width: 2;
+}
+
+.link {
+  stroke: cyan;
+  stroke-dasharray: 6;
+  animation: pulse 2s infinite linear;
+}
+
+.attack {
+  stroke: red;
+  stroke-width: 3;
+  stroke-dasharray: 10;
+  animation: attackFlow 1.5s infinite linear;
+}
+
+@keyframes pulse {
+  to { stroke-dashoffset: 20; }
+}
+
+@keyframes attackFlow {
+  to { stroke-dashoffset: -20; }
+}
+
+/* COLLAPSIBLES */
+details {
+  border: 1px solid cyan;
+  padding: 15px;
+  margin-bottom: 15px;
+}
+
+summary {
+  cursor: pointer;
+  font-family: 'Orbitron', sans-serif;
+  color: cyan;
+}
+
+li { margin-bottom: 10px; }
+</style>
+</head>
+
+<body>
+<canvas id="stars"></canvas>
+
+<nav>
+  <button onclick="location.href='equifax-case-studies.html'">⬅ PREVIOUS CASE</button>
+  <button onclick="location.href='index.html'">ARCADE ▶</button>
+</nav>
+
+<header>
+  <h1>FULTON COUNTY</h1>
+</header>
+
+<section class="dashboard">
+
+<div class="panel">
+<h3>Incident Overview</h3>
+<p>
+In early 2024, Fulton County, Georgia suffered a ransomware attack that
+forced multiple court systems, public services, and internal operations offline.
+The incident revealed weaknesses in endpoint protection, credential hygiene,
+and incident response readiness.
+</p>
+</div>
+
+<div class="panel">
+<h3>CIA Triad Impact</h3>
+<div class="triad">
+  <div class="triad-item">
+    <strong>Confidentiality</strong><br>
+    Potential exposure of sensitive legal and employee records.
+  </div>
+  <div class="triad-item">
+    <strong>Integrity</strong><br>
+    System trust degraded due to encrypted and unavailable records.
+  </div>
+  <div class="triad-item">
+    <strong>Availability</strong><br>
+    Court operations and county services disrupted for weeks.
+  </div>
+</div>
+</div>
+
+<div class="panel">
+<h3>Attack Path Visualization</h3>
+
+<svg viewBox="0 0 800 300">
+  <line x1="150" y1="150" x2="350" y2="150" class="attack"/>
+  <line x1="350" y1="150" x2="550" y2="150" class="link"/>
+  <circle cx="150" cy="150" r="40" class="node"/>
+  <circle cx="350" cy="150" r="40" class="node"/>
+  <circle cx="550" cy="150" r="40" class="node"/>
+  <text x="150" y="220" fill="cyan" text-anchor="middle">User Endpoint</text>
+  <text x="350" y="220" fill="cyan" text-anchor="middle">Internal Network</text>
+  <text x="550" y="220" fill="cyan" text-anchor="middle">Critical Services</text>
+</svg>
+
+<p>
+The attack likely began with a compromised endpoint, followed by lateral
+movement through internal systems and eventual deployment of ransomware
+across critical services.
+</p>
+</div>
+
+<div class="panel">
+<h3>MITRE ATT&CK Mapping</h3>
+
+<details>
+<summary>Initial Access</summary>
+Phishing or Valid Account Abuse (T1566 / T1078)
+</details>
+
+<details>
+<summary>Lateral Movement</summary>
+Remote Services & Credential Reuse (T1021)
+</details>
+
+<details>
+<summary>Impact</summary>
+Data Encrypted for Impact (T1486)
+</details>
+</div>
+
+<div class="panel">
+<h3>Recommended Remediations</h3>
+
+<details>
+<summary>Endpoint Hardening</summary>
+Deploy EDR, restrict admin privileges, and enforce MFA across endpoints.
+</details>
+
+<details>
+<summary>Network Segmentation</summary>
+Limit lateral movement between departments and critical services.
+</details>
+
+<details>
+<summary>Incident Response Readiness</summary>
+Maintain offline backups, tabletop exercises, and rapid containment playbooks.
+</details>
+
+</div>
+
+</section>
+
+<script>
+const canvas=document.getElementById('stars'),ctx=canvas.getContext('2d');
+let stars=[];
+
+function init(){
+canvas.width=window.innerWidth;
+canvas.height=window.innerHeight;
+stars=[];
+for(let i=0;i<120;i++)
+  stars.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height,s:Math.random()*2});
+}
+
+function animate(){
+ctx.fillStyle='black';
+ctx.fillRect(0,0,canvas.width,canvas.height);
+ctx.fillStyle='white';
+stars.forEach(st=>{
+  ctx.fillRect(st.x,st.y,st.s,st.s);
+  st.x-=0.3;
+  if(st.x<0) st.x=canvas.width;
+});
+requestAnimationFrame(animate);
+}
+
+window.addEventListener('resize',init);
+init(); animate();
+</script>
+
+</body>
+</html>
+
