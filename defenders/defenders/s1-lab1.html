@@ -198,6 +198,7 @@ Validate secure authentication and encrypted communication.
 </div>
 
 <script>
+let currentLab = 's1-lab1';
 let progress = 0;
 
 /* LOG */
@@ -260,7 +261,13 @@ function check() {
 }
 
 function returnDash() {
-  window.location.href = "defenders-dashboard.html";
+  // store completion in shared progress object
+  let progress = JSON.parse(localStorage.getItem("defenderProgress")) || {};
+  progress[currentLab] = true;
+  localStorage.setItem("defenderProgress", JSON.stringify(progress));
+
+  // redirect back to dashboard
+  window.location.href = "../defenders-dashboard.html";
 }
 
 /* BOOT ONLY ONCE */
@@ -286,6 +293,8 @@ if(!localStorage.getItem("booted")) {
 } else {
   document.getElementById('lab').classList.remove('hidden');
 }
+
+
 </script>
 
 </body>

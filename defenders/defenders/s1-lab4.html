@@ -136,7 +136,7 @@ button:hover {
 
 <div class="panel hidden" id="bugs">
 <h3>Byte Bug Escape</h3>
-<button onclick="contain()">Deploy Cyber Sleeves</button>
+<button onclick="contain()">Deploy IPS</button>
 </div>
 
 <div class="panel hidden" id="sonarPanel">
@@ -157,7 +157,11 @@ button:hover {
 <div id="cookie">
 🐕 Cookie: Awaiting orders, Defender.
 </div>
-
+<div class="panel hidden" id="complete">
+  <h3>System Stabilized</h3>
+  <p>Orientation complete. Defender identity verified.</p>
+  <button onclick="returnDash()">Return to Dashboard</button>
+</div>
 <script>
 
 let integrity = 60;
@@ -235,7 +239,15 @@ function fail(){
 }
 
 typeBoot();
+function returnDash() {
+  // Mark lab complete
+  let progress = JSON.parse(localStorage.getItem("defenderProgress")) || {};
+  progress[currentLab] = true;
+  localStorage.setItem("defenderProgress", JSON.stringify(progress));
 
+  // Return to dashboard
+  window.location.href = "../defenders-dashboard.html";
+}
 </script>
 
 </body>

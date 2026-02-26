@@ -46,7 +46,7 @@ button:disabled{opacity:0.4;cursor:not-allowed;}
 
 <div id="cookie"><div id="cookie-avatar">🐾</div><div id="cookie-text">COOKIE v1.3 — Lab 3 online. Something's in the system. I can smell it.</div></div>
 
-<h1>⚡ DEFENDERS GUILD</h1>
+<h1>DEFENDERS GUILD</h1>
 <p style="opacity:0.6;margin:0 0 4px;">SEASON 1 — PHASE 2: INCIDENT RESPONSE</p>
 <h2>LAB 03 // MALWARE TRIAGE</h2>
 <div id="pb-outer"><div id="pb"></div></div>
@@ -64,7 +64,13 @@ button:disabled{opacity:0.4;cursor:not-allowed;}
 <!-- PHASE 1 -->
 <div class="panel">
   <h3>PHASE 1 — FILE ANALYSIS</h3>
-  <p style="opacity:0.7;font-size:0.85rem;">Cross-reference the intercepted files. Classify each as CLEAN, SUSPECT, or INFECTED.</p>
+  <p style="opacity:0.7;font-size:0.85rem;">Eight files were intercepted from the three compromised nodes. Asher's Byte Bugs are known to arrive as executables (<code>.exe</code>, <code>.bin</code>, <code>.sh</code>) or scripted payloads (<code>.ps1</code>, <code>.dll</code>). Legitimate system files tend to be standard formats like <code>.txt</code>, <code>.json</code>, or <code>.html</code> with unremarkable sizes.</p>
+  <p style="opacity:0.7;font-size:0.85rem;margin-top:6px;">Use the filename, extension, and hash to make your call:</p>
+  <ul style="opacity:0.7;font-size:0.82rem;margin:6px 0 10px 18px;line-height:1.8;">
+    <li><span style="color:#00ffcc;">CLEAN</span> — standard file type, no suspicious indicators</li>
+    <li><span style="color:#ffaa00;">SUSPECT</span> — unusual extension, unexpected size, or irregular hash pattern</li>
+    <li><span style="color:#ff4444;">INFECTED</span> — known Byte Bug filename or signature match from Asher's prior attack</li>
+  </ul>
   <table class="file-table"><thead><tr><th>FILENAME</th><th>SIZE</th><th>HASH</th><th>EXT</th><th>STATUS</th><th>CLASSIFY</th></tr></thead>
   <tbody id="ftbody"></tbody></table>
   <p id="cls-status" style="margin-top:12px;font-size:0.85rem;color:#888;">Awaiting classification...</p>
@@ -82,7 +88,10 @@ button:disabled{opacity:0.4;cursor:not-allowed;}
 <!-- PHASE 3 -->
 <div class="panel">
   <h3>PHASE 3 — INFECTION CHAIN RECONSTRUCTION</h3>
-  <p style="opacity:0.7;font-size:0.85rem;">Click events in the order they occurred (1 = first) to identify Patient Zero.</p>
+  <p style="opacity:0.7;font-size:0.85rem;">Five events from the breach have been recovered from Darwin's logs — but they've been scrambled. Reconstruct the attack sequence by clicking each event in the order it actually happened, starting with how Asher first got in.</p>
+  <p style="opacity:0.6;font-size:0.82rem;margin-top:6px;border-left:2px solid #00ffcc44;padding-left:10px;">
+    <strong style="color:#00ffcc;opacity:0.8;">HINT:</strong> Think like an attacker. Every intrusion follows a pattern: initial access → execution → command &amp; control → lateral movement → persistence. Ask yourself — what had to happen <em>before</em> each event was possible? A beacon can't phone home until something opened the door. A backdoor can't persist until it has a foothold.
+  </p>
   <div id="chain-wrap"></div>
   <br><button onclick="checkChain()" id="verify-chain-btn">🔍 VERIFY SEQUENCE</button>
   <p id="chain-status" style="margin-top:10px;font-size:0.85rem;"></p>
@@ -114,7 +123,11 @@ button:disabled{opacity:0.4;cursor:not-allowed;}
   <p style="color:#888;font-size:0.85rem;">Darwin's signal flickers in the malware header — a hidden comment: <em>"If you're reading this, the chain is yours to break."</em> He knew someone would follow his trail.</p>
   <p><strong>SKILLS EARNED:</strong> File Triage · Behavioral Analysis · Infection Chain Mapping · IOC Identification</p>
   <p><strong>CAREER RELEVANCE:</strong> SOC Tier 1 & 2 · Incident Responder</p>
-  <br><a href="lab4.html"><button>→ PROCEED TO LAB 4: CONTAINMENT &amp; ISOLATION</button></a>
+  <br>
+  <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;">
+    <a href="lab4.html"><button>→ PROCEED TO LAB 4: CONTAINMENT &amp; ISOLATION</button></a>
+    <a href="dashboard.html"><button style="border-color:#555;color:#888;">⌂ BACK TO DASHBOARD</button></a>
+  </div>
 </div>
 
 <script>
@@ -217,16 +230,16 @@ function finishScan(){
 
 // CHAIN
 const events=[
-  {t:'A: Asher deploys byte_agent.bin via phishing email attachment',pos:1},
-  {t:'B: byte_agent.bin executes and spawns svchost_update.exe',pos:2},
-  {t:'C: svchost_update.exe establishes C2 beacon to 192.168.4.77',pos:3},
-  {t:'D: network_init.ps1 triggers DNS flood to mask exfiltration',pos:4},
-  {t:'E: asher_backdoor.sh persists via HKLM registry key',pos:5},
+  {t:'PHISHING DELIVERY — byte_agent.bin dropped via crafted email attachment targeting Node 1',pos:1},
+  {t:'PROCESS SPAWN — byte_agent.bin parent process forks svchost_update.exe child (PID 1042)',pos:2},
+  {t:'C2 BEACON — svchost_update.exe initiates outbound call to 192.168.4.77 on port 443',pos:3},
+  {t:'DNS FLOOD — network_init.ps1 triggers high-volume DNS queries to obscure data exfil',pos:4},
+  {t:'PERSISTENCE — asher_backdoor.sh writes autorun entry to HKLM\\Run registry hive',pos:5},
 ];
 let shuffled=[],chainSel=[];
 function buildChain(){
   shuffled=[...events].sort(()=>Math.random()-0.5);chainSel=[];
-  const w=document.getElementById('chain-wrap');w.innerHTML='<p style="font-size:0.78rem;opacity:0.6;margin-bottom:8px;">Click events in the order they occurred (1 = first):</p>';
+  const w=document.getElementById('chain-wrap');w.innerHTML='<p style="font-size:0.78rem;opacity:0.6;margin-bottom:8px;">Select events in sequence — your first click = the first event in the chain:</p>';
   shuffled.forEach((e,i)=>{
     const b=document.createElement('button');
     b.style.cssText='display:block;width:100%;text-align:left;margin:5px 0;padding:10px;font-size:0.82rem;';
@@ -306,6 +319,11 @@ function showComplete(){
   document.getElementById('complete-panel').scrollIntoView({behavior:'smooth'});
   lg('>>> LAB 3 COMPLETE. MALWARE TRIAGE SUCCESSFUL. <<<','success');
   cookie('Lab 3 done. Infection chain mapped, Byte Bugs contained. Asher is watching — stay sharp, Defender.');
+}
+
+function finishLab() {
+  completeLab("lab3");
+  window.location.href = "../defenders-dashboard.html";
 }
 </script>
 </body>
