@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DEFENDERS — Lab 3: Malware Triage</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;}
+body{background-color:#000;color:#00ffcc;font-family:'Courier New',Courier,monospace;font-size:16px;line-height:1.4;margin:0;padding:20px;overflow-x:hidden;}
+h1,h2,h3,h4{font-family:'Courier New',Courier,monospace;color:#00ffcc;margin:0 0 12px 0;}
+h1{font-size:2rem;}h2{font-size:1.6rem;}h3{font-size:1.3rem;}
+a{color:#00ffcc;text-decoration:none;}a:hover{text-decoration:underline;}
+.hidden{display:none;}.center{text-align:center;}
+.panel{border:1px solid #00ffcc;padding:18px;margin:20px 0;background-color:rgba(0,0,0,0.85);border-radius:6px;box-shadow:0 0 12px rgba(0,255,204,0.4);}
+button{background-color:#000;border:1px solid #00ffcc;color:#00ffcc;padding:10px 16px;cursor:pointer;font-family:monospace;font-size:0.95rem;border-radius:4px;transition:all 0.2s ease;display:inline-block;}
+button:hover{background-color:#002;box-shadow:0 0 8px #00ffcc;}
+button:disabled{opacity:0.4;cursor:not-allowed;}
+#cookie{position:fixed;top:20px;right:20px;width:240px;border:1px solid #00ffcc;background:#000;padding:12px;box-shadow:0 0 18px rgba(0,255,204,.5);font-size:0.9rem;z-index:9999;border-radius:8px;}
+#cookie-avatar{font-size:1.6rem;margin-bottom:6px;}
+#cookie-text{opacity:0.95;line-height:1.4;}
+#cookie::before{content:"";position:absolute;inset:0;background:linear-gradient(rgba(0,255,204,0.05),transparent);pointer-events:none;}
+.boot{font-size:1.1rem;margin-bottom:20px;white-space:pre-wrap;word-break:break-word;min-height:60px;}
+.typing-cursor::after{content:"_";animation:blink 1s step-end infinite;}
+@keyframes blink{from,to{opacity:0;}50%{opacity:1;}}
+.log{background-color:#001;border:1px solid #00ffcc;padding:12px;margin-top:20px;height:220px;overflow-y:auto;font-size:0.85rem;border-radius:4px;box-shadow:0 0 10px rgba(0,255,204,0.3);}
+.log p{margin:3px 0;}.warn{color:#ffaa00;}.danger{color:#ff4444;}.success{color:#00ffcc;}.info{color:#888;}
+#pb-outer{background:rgba(0,255,204,0.1);border:1px solid #00ffcc44;border-radius:4px;height:8px;margin:10px 0 20px;overflow:hidden;}
+#pb{height:100%;background:#00ffcc;width:0%;transition:width 0.5s ease;box-shadow:0 0 8px #00ffcc;}
+.file-table{width:100%;border-collapse:collapse;font-size:0.82rem;margin-top:10px;}
+.file-table th{border-bottom:1px solid #00ffcc;padding:8px 10px;text-align:left;color:#00ffcc;opacity:0.8;}
+.file-table td{padding:8px 10px;border-bottom:1px solid rgba(0,255,204,0.12);}
+.file-table tr:hover td{background:rgba(0,255,204,0.04);}
+.badge{display:inline-block;padding:2px 8px;border-radius:3px;font-size:0.72rem;font-weight:bold;}
+.bc{background:rgba(0,255,204,0.1);color:#00ffcc;border:1px solid #00ffcc;}
+.bs{background:rgba(255,170,0,0.1);color:#ffaa00;border:1px solid #ffaa00;}
+.bi{background:rgba(255,68,68,0.1);color:#ff4444;border:1px solid #ff4444;}
+.bu{background:rgba(120,120,120,0.1);color:#888;border:1px solid #555;}
+.bw{width:160px;background:rgba(0,255,204,0.1);border:1px solid #00ffcc33;border-radius:3px;height:12px;display:inline-block;vertical-align:middle;overflow:hidden;}
+.bfill{height:100%;background:#00ffcc;width:0%;transition:width 1.2s ease;}
+.bfill.red{background:#ff4444;}.bfill.yellow{background:#ffaa00;}
+#q-vault{min-height:60px;border:1px dashed #ffaa00;border-radius:4px;padding:10px;margin-top:8px;font-size:0.83rem;color:#ffaa00;}
+.q-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,170,0,0.2);}
+.threat-chip{padding:8px 10px;border:1px solid #ff4444;border-radius:4px;margin:5px 0;cursor:grab;font-size:0.82rem;color:#ff4444;background:rgba(255,68,68,0.05);}
+</style>
+</head>
+<body>
+
+<div id="cookie"><div id="cookie-avatar">🐾</div><div id="cookie-text">COOKIE v1.3 — Lab 3 online. Something's in the system. I can smell it.</div></div>
+
+<h1>DEFENDERS GUILD</h1>
+<p style="opacity:0.6;margin:0 0 4px;">SEASON 1 — PHASE 2: INCIDENT RESPONSE</p>
+<h2>LAB 03 // MALWARE TRIAGE</h2>
+<div id="pb-outer"><div id="pb"></div></div>
+
+<div class="panel"><div class="boot typing-cursor" id="boot-text"></div></div>
+
+<div class="panel">
+  <h3>📋 MISSION BRIEF</h3>
+  <p><strong>Skill Focus:</strong> File analysis · Behavior monitoring · Infection tracking</p>
+  <p><strong>Role Alignment:</strong> SOC Tier 1 / Incident Responder</p>
+  <p><strong>Story Context:</strong> The anomalies from Lab 2 weren't noise. Asher's Byte Bugs have mutated and begun dropping malware payloads across three nodes. You must triage infected files before they replicate further. Darwin's logs indicate the initial dropper arrived via phishing — trace it back and contain every thread.</p>
+  <p><strong>Objectives:</strong> Classify intercepted files · Monitor process behavior · Reconstruct the infection chain · Quarantine all threats before replication completes</p>
+</div>
+
+<!-- PHASE 1 -->
+<div class="panel">
+  <h3>PHASE 1 — FILE ANALYSIS</h3>
+  <p style="opacity:0.7;font-size:0.85rem;">Eight files were intercepted from the three compromised nodes. Asher's Byte Bugs are known to arrive as executables (<code>.exe</code>, <code>.bin</code>, <code>.sh</code>) or scripted payloads (<code>.ps1</code>, <code>.dll</code>). Legitimate system files tend to be standard formats like <code>.txt</code>, <code>.json</code>, or <code>.html</code> with unremarkable sizes.</p>
+  <p style="opacity:0.7;font-size:0.85rem;margin-top:6px;">Use the filename, extension, and hash to make your call:</p>
+  <ul style="opacity:0.7;font-size:0.82rem;margin:6px 0 10px 18px;line-height:1.8;">
+    <li><span style="color:#00ffcc;">CLEAN</span> — standard file type, no suspicious indicators</li>
+    <li><span style="color:#ffaa00;">SUSPECT</span> — unusual extension, unexpected size, or irregular hash pattern</li>
+    <li><span style="color:#ff4444;">INFECTED</span> — known Byte Bug filename or signature match from Asher's prior attack</li>
+  </ul>
+  <table class="file-table"><thead><tr><th>FILENAME</th><th>SIZE</th><th>HASH</th><th>EXT</th><th>STATUS</th><th>CLASSIFY</th></tr></thead>
+  <tbody id="ftbody"></tbody></table>
+  <p id="cls-status" style="margin-top:12px;font-size:0.85rem;color:#888;">Awaiting classification...</p>
+</div>
+
+<!-- PHASE 2 -->
+<div class="panel">
+  <h3>PHASE 2 — BEHAVIOR MONITORING</h3>
+  <p style="opacity:0.7;font-size:0.85rem;">Scan active processes. CPU spikes, registry writes, and beacons signal live infection.</p>
+  <div id="proc-wrap"></div>
+  <br><button id="scan-btn" onclick="runBehaviorScan()">▶ RUN BEHAVIOR SCAN</button>
+  <p id="beh-status" style="margin-top:10px;font-size:0.85rem;color:#888;"></p>
+</div>
+
+<!-- PHASE 3 -->
+<div class="panel">
+  <h3>PHASE 3 — INFECTION CHAIN RECONSTRUCTION</h3>
+  <p style="opacity:0.7;font-size:0.85rem;">Five events from the breach have been recovered from Darwin's logs — but they've been scrambled. Reconstruct the attack sequence by clicking each event in the order it actually happened, starting with how Asher first got in.</p>
+  <p style="opacity:0.6;font-size:0.82rem;margin-top:6px;border-left:2px solid #00ffcc44;padding-left:10px;">
+    <strong style="color:#00ffcc;opacity:0.8;">HINT:</strong> Think like an attacker. Every intrusion follows a pattern: initial access → execution → command &amp; control → lateral movement → persistence. Ask yourself — what had to happen <em>before</em> each event was possible? A beacon can't phone home until something opened the door. A backdoor can't persist until it has a foothold.
+  </p>
+  <div id="chain-wrap"></div>
+  <br><button onclick="checkChain()" id="verify-chain-btn">🔍 VERIFY SEQUENCE</button>
+  <p id="chain-status" style="margin-top:10px;font-size:0.85rem;"></p>
+</div>
+
+<!-- PHASE 4 -->
+<div class="panel">
+  <h3>PHASE 4 — QUARANTINE &amp; ISOLATE</h3>
+  <p style="opacity:0.7;font-size:0.85rem;">Drag all confirmed threats into the Quarantine Vault before the replication timer expires.</p>
+  <div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:12px;">
+    <div style="flex:1;min-width:180px;"><p style="font-size:0.78rem;opacity:0.6;margin:0 0 6px;">CONFIRMED THREATS</p><div id="threat-list"></div></div>
+    <div style="flex:1;min-width:180px;"><p style="font-size:0.78rem;opacity:0.6;margin:0 0 6px;">QUARANTINE VAULT</p><div id="q-vault">Drop threats here...</div></div>
+  </div>
+  <div style="margin-top:14px;display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+    <span>REPLICATION TIMER: <span id="rep-t" style="color:#ff4444;font-size:1.1rem;font-weight:bold;">60s</span></span>
+    <button onclick="beginQuarantine()" id="q-btn">🔒 BEGIN QUARANTINE PROTOCOL</button>
+  </div>
+  <p id="q-status" style="margin-top:10px;font-size:0.85rem;"></p>
+</div>
+
+<div class="log" id="log">
+  <p class="info">// LAB 3 INITIALIZED — MALWARE TRIAGE MODULE LOADED</p>
+  <p class="info">// Awaiting Defender input...</p>
+</div>
+
+<div class="panel hidden" id="complete-panel" style="box-shadow:0 0 24px rgba(0,255,204,0.6);">
+  <h3 style="font-size:1.4rem;">✅ LAB 3 COMPLETE — TRIAGE SUCCESSFUL</h3>
+  <p>Patient Zero identified. Infection chain mapped. Byte Bug payload neutralized.</p>
+  <p style="color:#888;font-size:0.85rem;">Darwin's signal flickers in the malware header — a hidden comment: <em>"If you're reading this, the chain is yours to break."</em> He knew someone would follow his trail.</p>
+  <p><strong>SKILLS EARNED:</strong> File Triage · Behavioral Analysis · Infection Chain Mapping · IOC Identification</p>
+  <p><strong>CAREER RELEVANCE:</strong> SOC Tier 1 & 2 · Incident Responder</p>
+  <br>
+  <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;">
+    <a href="lab4.html"><button>→ PROCEED TO LAB 4: CONTAINMENT &amp; ISOLATION</button></a>
+    <a href="dashboard.html"><button style="border-color:#555;color:#888;">⌂ BACK TO DASHBOARD</button></a>
+  </div>
+</div>
+
+<script>
+const narrative=`> DEFENDERS GUILD — BOOTLOADER v1.0\n> Sector 3 breach confirmed.\n> Byte Bug payload signature: ASHER-MUT-0x3A\n> 3 nodes flagged. File quarantine system: ONLINE.\n> Defender — it is time to triage.`;
+let ci=0;const be=document.getElementById('boot-text');
+function typeIt(){if(ci<narrative.length){be.textContent+=narrative[ci++];setTimeout(typeIt,28);}else{be.classList.remove('typing-cursor');initLab();}}
+typeIt();
+
+const phases={p1:false,p2:false,p3:false,p4:false};
+function updatePB(){const d=Object.values(phases).filter(Boolean).length;document.getElementById('pb').style.width=(d/4*100)+'%';if(d===4)setTimeout(showComplete,600);}
+function lg(m,c=''){const l=document.getElementById('log');const p=document.createElement('p');if(c)p.className=c;p.textContent=m;l.appendChild(p);l.scrollTop=l.scrollHeight;}
+function cookie(m){document.getElementById('cookie-text').textContent=m;}
+
+// FILES
+const files=[
+  {n:'svchost_update.exe',sz:'48 KB',h:'a3f4b2c1d0e9',e:'.exe',s:'infected'},
+  {n:'readme.txt',sz:'2 KB',h:'00ff11aa22bb',e:'.txt',s:'clean'},
+  {n:'libssl.dll',sz:'312 KB',h:'deadbeef0012',e:'.dll',s:'suspect'},
+  {n:'config.json',sz:'5 KB',h:'99aa1100ccdd',e:'.json',s:'clean'},
+  {n:'byte_agent.bin',sz:'80 KB',h:'ff00cc11aa33',e:'.bin',s:'infected'},
+  {n:'network_init.ps1',sz:'22 KB',h:'b1c2d3e4f5a6',e:'.ps1',s:'suspect'},
+  {n:'index.html',sz:'9 KB',h:'1a2b3c4d5e6f',e:'.html',s:'clean'},
+  {n:'asher_backdoor.sh',sz:'15 KB',h:'aabbccddeeff',e:'.sh',s:'infected'},
+];
+let classed={};
+function initLab(){buildFiles();buildProcs();buildChain();buildThreats();}
+function buildFiles(){
+  const tb=document.getElementById('ftbody');
+  files.forEach((f,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${f.n}</td><td>${f.sz}</td><td style="font-size:0.72rem;color:#555;">${f.h}</td><td>${f.e}</td>
+    <td id="b${i}"><span class="badge bu">UNCLASSIFIED</span></td>
+    <td><select id="s${i}" onchange="classFile(${i},this.value)" style="background:#000;border:1px solid #00ffcc33;color:#00ffcc;font-family:monospace;padding:4px;border-radius:3px;font-size:0.78rem;">
+      <option value="">--</option><option value="clean">CLEAN</option><option value="suspect">SUSPECT</option><option value="infected">INFECTED</option>
+    </select></td>`;
+    tb.appendChild(tr);
+  });
+}
+function classFile(i,v){
+  if(!v)return;classed[i]=v;
+  const cls=v==='clean'?'bc':v==='suspect'?'bs':'bi';
+  document.getElementById('b'+i).innerHTML=`<span class="badge ${cls}">${v.toUpperCase()}</span>`;
+  lg(`> Classified: ${files[i].n} → ${v.toUpperCase()}`);
+  if(Object.keys(classed).length===files.length)checkFiles();
+}
+function checkFiles(){
+  let ok=0;files.forEach((f,i)=>{if(classed[i]===f.s)ok++;});
+  const pct=Math.round(ok/files.length*100);
+  const el=document.getElementById('cls-status');
+  if(pct>=75){el.innerHTML=`Classification complete — <strong>${ok}/${files.length}</strong> correct. <span style="color:#00ffcc;">✓ Phase 1 passed.</span>`;
+    phases.p1=true;updatePB();lg('> Phase 1 complete. File analysis logged.','success');
+    cookie('Good eye. Those .exe and .bin files are classic Byte Bug dropper patterns. Asher always hides in plain sight.');}
+  else{el.innerHTML=`<span style="color:#ffaa00;">⚠ ${ok}/${files.length} correct. Re-examine hashes and extensions.</span>`;}
+}
+
+// PROCS
+const procs=[
+  {n:'svchost.exe (PID 1042)',cpu:89,net:'beacon → 192.168.4.77',reg:'HKLM\\Run\\svc_upd',bad:true},
+  {n:'explorer.exe (PID 204)',cpu:4,net:'none',reg:'none',bad:false},
+  {n:'byte_agent.bin (PID 3301)',cpu:72,net:'beacon → 10.0.0.255',reg:'HKCU\\Software\\BugCtrl',bad:true},
+  {n:'winlogon.exe (PID 580)',cpu:1,net:'none',reg:'none',bad:false},
+  {n:'network_init.ps1 (PID 9900)',cpu:31,net:'DNS query spike',reg:'HKLM\\Services\\NetSvc',bad:true},
+];
+function buildProcs(){
+  const w=document.getElementById('proc-wrap');
+  procs.forEach((p,i)=>{
+    const d=document.createElement('div');
+    d.style.cssText='margin:8px 0;padding:10px;border:1px solid rgba(0,255,204,0.18);border-radius:4px;font-size:0.82rem;';
+    d.id='pr'+i;
+    d.innerHTML=`<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <span style="color:#00ffcc;">${p.n}</span><span id="pf${i}" style="opacity:0.4;">◈ IDLE</span></div>
+      <div style="margin-top:6px;display:flex;gap:18px;flex-wrap:wrap;">
+        <span>CPU: <span class="bw"><span class="bfill ${p.cpu>60?'red':p.cpu>30?'yellow':''}" id="bf${i}"></span></span> <span id="cv${i}">0%</span></span>
+        <span>NET: <span style="color:${p.net!=='none'?'#ffaa00':'#555'}">${p.net}</span></span>
+        <span>REG: <span style="color:${p.reg!=='none'?'#ff4444':'#555'}">${p.reg}</span></span>
+      </div>`;
+    w.appendChild(d);
+  });
+}
+let scanDone=false;
+function runBehaviorScan(){
+  if(scanDone)return;document.getElementById('scan-btn').disabled=true;
+  lg('> Behavior scan initiated...');cookie('Watch the CPU spikes. Malware beacons when it thinks no one is watching.');
+  let i=0;const iv=setInterval(()=>{
+    if(i>=procs.length){clearInterval(iv);finishScan();return;}
+    const p=procs[i];
+    document.getElementById('bf'+i).style.width=p.cpu+'%';
+    document.getElementById('cv'+i).textContent=p.cpu+'%';
+    const fl=document.getElementById('pf'+i);
+    if(p.bad){fl.textContent='⚠ ANOMALOUS';fl.style.color='#ff4444';fl.style.opacity='1';lg(`> ANOMALY: ${p.n} — C2 beacon detected`,'danger');}
+    else{fl.textContent='✓ CLEAN';fl.style.color='#00ffcc';fl.style.opacity='1';}
+    i++;
+  },700);
+}
+function finishScan(){
+  scanDone=true;
+  document.getElementById('beh-status').innerHTML='<span style="color:#00ffcc;">✓ 3 anomalous processes flagged. Phase 2 complete.</span>';
+  phases.p2=true;updatePB();lg('> Phase 2 complete. Behavioral IOCs logged.','success');buildThreats();
+}
+
+// CHAIN
+const events=[
+  {t:'PHISHING DELIVERY — byte_agent.bin dropped via crafted email attachment targeting Node 1',pos:1},
+  {t:'PROCESS SPAWN — byte_agent.bin parent process forks svchost_update.exe child (PID 1042)',pos:2},
+  {t:'C2 BEACON — svchost_update.exe initiates outbound call to 192.168.4.77 on port 443',pos:3},
+  {t:'DNS FLOOD — network_init.ps1 triggers high-volume DNS queries to obscure data exfil',pos:4},
+  {t:'PERSISTENCE — asher_backdoor.sh writes autorun entry to HKLM\\Run registry hive',pos:5},
+];
+let shuffled=[],chainSel=[];
+function buildChain(){
+  shuffled=[...events].sort(()=>Math.random()-0.5);chainSel=[];
+  const w=document.getElementById('chain-wrap');w.innerHTML='<p style="font-size:0.78rem;opacity:0.6;margin-bottom:8px;">Select events in sequence — your first click = the first event in the chain:</p>';
+  shuffled.forEach((e,i)=>{
+    const b=document.createElement('button');
+    b.style.cssText='display:block;width:100%;text-align:left;margin:5px 0;padding:10px;font-size:0.82rem;';
+    b.id='ce'+i;b.textContent='[?] '+e.t;
+    b.onclick=()=>selectChain(i,b,e);
+    w.appendChild(b);
+  });
+}
+function selectChain(i,btn,e){
+  if(chainSel.find(x=>x.i===i))return;
+  chainSel.push({i,pos:e.pos});
+  btn.textContent=`[${chainSel.length}] ${e.t}`;btn.style.borderColor='#ffaa00';btn.style.color='#ffaa00';
+}
+function checkChain(){
+  let ok=0;
+  chainSel.forEach((x,idx)=>{if(x.pos===idx+1)ok++;});
+  const s=document.getElementById('chain-status');
+  if(ok>=4){
+    s.innerHTML='<span style="color:#00ffcc;">✓ Infection chain verified. Patient Zero: byte_agent.bin (phishing dropper). Phase 3 complete.</span>';
+    phases.p3=true;updatePB();lg('> Phase 3 complete. Patient Zero: byte_agent.bin','success');
+    cookie('Patient Zero confirmed. Darwin left that phishing vector in his notes — he knew Asher would use it again.');
+  } else {
+    s.innerHTML=`<span style="color:#ffaa00;">⚠ ${ok}/5 correct. Re-examine behavioral logs and retry.</span>`;
+    buildChain();
+  }
+}
+
+// QUARANTINE
+const threatFiles=['svchost_update.exe','byte_agent.bin','asher_backdoor.sh','network_init.ps1'];
+let qDone=[],qTimer=null,qTime=60,qStarted=false;
+function buildThreats(){
+  const tl=document.getElementById('threat-list');tl.innerHTML='';
+  threatFiles.filter(f=>!qDone.includes(f)).forEach(name=>{
+    const d=document.createElement('div');d.className='threat-chip';d.draggable=true;
+    d.textContent='⚠ '+name;d.id='tc-'+name.replace(/\./g,'-');
+    d.addEventListener('dragstart',e=>{window._drag=name;e.dataTransfer.effectAllowed='move';});
+    tl.appendChild(d);
+  });
+}
+const qv=document.getElementById('q-vault');
+qv.addEventListener('dragover',e=>{e.preventDefault();qv.style.borderColor='#00ffcc';});
+qv.addEventListener('dragleave',()=>qv.style.borderColor='#ffaa00');
+qv.addEventListener('drop',e=>{
+  e.preventDefault();qv.style.borderColor='#ffaa00';
+  const name=window._drag;if(!name||qDone.includes(name))return;
+  qDone.push(name);
+  const el=document.getElementById('tc-'+name.replace(/\./g,'-'));if(el)el.remove();
+  const row=document.createElement('div');row.className='q-row';
+  row.innerHTML=`<span>🔒 ${name}</span><span style="color:#00ffcc;font-size:0.72rem;">QUARANTINED</span>`;
+  if(qv.textContent.trim()==='Drop threats here...')qv.textContent='';
+  qv.appendChild(row);lg(`> Quarantined: ${name}`,'success');window._drag=null;
+  if(qDone.length>=threatFiles.length)finishQuarantine();
+});
+function beginQuarantine(){
+  if(qStarted)return;qStarted=true;document.getElementById('q-btn').disabled=true;
+  lg('> Quarantine protocol active. Timer running.','warn');
+  cookie('Move fast! Drag every red file into the vault. Byte Bugs replicate in under a minute.');
+  qTimer=setInterval(()=>{
+    qTime--;document.getElementById('rep-t').textContent=qTime+'s';
+    if(qTime<=0){clearInterval(qTimer);if(qDone.length<threatFiles.length){timerFail();}}
+  },1000);
+}
+function timerFail(){
+  document.getElementById('q-status').innerHTML='<span style="color:#ff4444;">⚠ Timer expired. Partial containment — restarting Phase 4.</span>';
+  qTime=60;qStarted=false;qDone=[];
+  document.getElementById('rep-t').textContent='60s';document.getElementById('q-btn').disabled=false;
+  qv.innerHTML='Drop threats here...';buildThreats();
+}
+function finishQuarantine(){
+  clearInterval(qTimer);
+  document.getElementById('q-status').innerHTML='<span style="color:#00ffcc;">✓ All threats quarantined. Network stabilized. Phase 4 complete.</span>';
+  phases.p4=true;updatePB();lg('> Phase 4 complete. All Byte Bug payloads contained.','success');
+  cookie('All four files isolated. The network is breathing again. Darwin would be proud of you.');
+}
+function showComplete(){
+  document.getElementById('complete-panel').classList.remove('hidden');
+  document.getElementById('complete-panel').scrollIntoView({behavior:'smooth'});
+  lg('>>> LAB 3 COMPLETE. MALWARE TRIAGE SUCCESSFUL. <<<','success');
+  cookie('Lab 3 done. Infection chain mapped, Byte Bugs contained. Asher is watching — stay sharp, Defender.');
+}
+
+function finishLab() {
+  completeLab("lab3");
+  window.location.href = "../defenders-dashboard.html";
+}
+</script>
+</body>
+</html>

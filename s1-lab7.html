@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DEFENDERS — Lab 7: Threat Hunting</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;}
+body{background-color:#000;color:#00ffcc;font-family:'Courier New',Courier,monospace;font-size:16px;line-height:1.4;margin:0;padding:20px;overflow-x:hidden;}
+h1,h2,h3,h4{font-family:'Courier New',Courier,monospace;color:#00ffcc;margin:0 0 12px 0;}
+h1{font-size:2rem;}h2{font-size:1.6rem;}h3{font-size:1.3rem;}
+a{color:#00ffcc;text-decoration:none;}a:hover{text-decoration:underline;}
+.hidden{display:none;}.center{text-align:center;}
+.panel{border:1px solid #00ffcc;padding:18px;margin:20px 0;background-color:rgba(0,0,0,0.85);border-radius:6px;box-shadow:0 0 12px rgba(0,255,204,0.4);}
+button{background-color:#000;border:1px solid #00ffcc;color:#00ffcc;padding:10px 16px;cursor:pointer;font-family:monospace;font-size:0.95rem;border-radius:4px;transition:all 0.2s ease;display:inline-block;}
+button:hover{background-color:#002;box-shadow:0 0 8px #00ffcc;}
+button:disabled{opacity:0.4;cursor:not-allowed;}
+#cookie{position:fixed;top:20px;right:20px;width:240px;border:1px solid #00ffcc;background:#000;padding:12px;box-shadow:0 0 18px rgba(0,255,204,.5);font-size:0.9rem;z-index:9999;border-radius:8px;}
+#cookie-avatar{font-size:1.6rem;margin-bottom:6px;}
+#cookie-text{opacity:0.95;line-height:1.4;}
+#cookie::before{content:"";position:absolute;inset:0;background:linear-gradient(rgba(0,255,204,0.05),transparent);pointer-events:none;}
+.boot{font-size:1.1rem;margin-bottom:20px;white-space:pre-wrap;word-break:break-word;min-height:60px;}
+.typing-cursor::after{content:"_";animation:blink 1s step-end infinite;}
+@keyframes blink{from,to{opacity:0;}50%{opacity:1;}}
+.log{background-color:#001;border:1px solid #00ffcc;padding:12px;margin-top:20px;height:220px;overflow-y:auto;font-size:0.85rem;border-radius:4px;box-shadow:0 0 10px rgba(0,255,204,0.3);}
+.log p{margin:3px 0;}.warn{color:#ffaa00;}.danger{color:#ff4444;}.success{color:#00ffcc;}.info{color:#888;}
+#pb-outer{background:rgba(0,255,204,0.1);border:1px solid #00ffcc44;border-radius:4px;height:8px;margin:10px 0 20px;overflow:hidden;}
+#pb{height:100%;background:#00ffcc;width:0%;transition:width 0.5s ease;box-shadow:0 0 8px #00ffcc;}
+/* hunter confidence bar */
+#hc-outer{background:rgba(0,255,204,0.1);border:1px solid #00ffcc44;border-radius:4px;height:12px;margin:6px 0 4px;overflow:hidden;}
+#hc-bar{height:100%;background:#ffaa00;width:70%;transition:width 0.5s ease;}
+#hc-bar.high{background:#00ffcc;box-shadow:0 0 6px #00ffcc;}
+#hc-bar.low{background:#ff4444;}
+/* traffic chart */
+.traffic-chart{background:#001;border:1px solid rgba(0,255,204,0.2);border-radius:4px;padding:12px;margin:10px 0;font-size:0.78rem;}
+.tc-row{display:flex;align-items:center;gap:8px;margin:5px 0;}
+.tc-label{min-width:90px;opacity:0.6;}
+.tc-bar-wrap{flex:1;background:rgba(0,255,204,0.08);border-radius:2px;height:14px;overflow:hidden;}
+.tc-fill{height:100%;background:#00ffcc44;transition:width 1s ease;}
+.tc-fill.spike{background:#ff4444;animation:spikepulse 1.2s infinite;}
+.tc-fill.warn{background:#ffaa00;}
+@keyframes spikepulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
+.tc-val{min-width:50px;text-align:right;opacity:0.7;}
+/* pivot cards */
+.pivot-card{border:1px solid rgba(0,255,204,0.22);border-radius:4px;padding:14px;margin:8px 0;cursor:pointer;transition:all 0.2s;font-size:0.85rem;}
+.pivot-card:hover{background:rgba(0,255,204,0.03);border-color:#00ffcc55;}
+.pivot-card h4{margin:0 0 5px;font-size:0.9rem;}
+.pivot-card p{margin:0;opacity:0.6;font-size:0.8rem;}
+.pivot-card.chosen-right{border-color:#00ffcc;background:rgba(0,255,204,0.04);}
+.pivot-card.chosen-wrong{border-color:#ff4444;background:rgba(255,68,68,0.04);}
+/* findings table */
+.find-table{width:100%;border-collapse:collapse;font-size:0.82rem;margin-top:10px;}
+.find-table th{border-bottom:1px solid #00ffcc;padding:7px 10px;text-align:left;opacity:0.7;}
+.find-table td{padding:7px 10px;border-bottom:1px solid rgba(0,255,204,0.1);}
+.find-table tr.hit td{color:#ff4444;}
+.find-table tr.neutral td{color:#888;}
+/* remediation steps */
+.rem-step{border:1px solid rgba(0,255,204,0.2);border-radius:4px;padding:12px 14px;margin:8px 0;font-size:0.85rem;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;}
+.rem-step .step-desc{flex:1;}
+.rem-step .step-result{font-size:0.78rem;opacity:0;}
+.rem-step .step-result.show{opacity:1;transition:opacity 0.4s;}
+</style>
+</head>
+<body>
+
+<div id="cookie"><div id="cookie-avatar">🐾</div><div id="cookie-text">COOKIE v1.3 — Lab 7 online. No alerts triggered. That's exactly what worries me.</div></div>
+
+<h1>DEFENDERS GUILD</h1>
+<p style="opacity:0.6;margin:0 0 4px;">SEASON 1 — PHASE 3: THREAT HUNTING</p>
+<h2>LAB 07 // THREAT HUNTING</h2>
+<div id="pb-outer"><div id="pb"></div></div>
+
+<div class="panel"><div class="boot typing-cursor" id="boot-text"></div></div>
+
+<div class="panel">
+  <h3>📋 MISSION BRIEF</h3>
+  <p><strong>Skill Focus:</strong> Hypothesis formation · Log pivoting · Persistence identification · Proactive threat removal</p>
+  <p><strong>Role Alignment:</strong> SOC Tier 2–3 / Threat Hunter</p>
+  <p><strong>Story Context:</strong> The detection engine from Lab 6 is running clean — no high-confidence alerts. But something is off. Outbound traffic is slightly higher than baseline. Not enough to trigger a rule. Not enough to be obvious. Asher adapted after Lab 6 — his new implant communicates on a slower cadence specifically designed to stay below detection thresholds. Threat hunting is the answer to attacks that don't make noise: you form a hypothesis about what might be hiding, then follow the data until it confirms or refutes it. No alert to start from. Just instinct, logs, and method.</p>
+  <p><strong>Objectives:</strong> Analyse traffic baseline anomalies · Form and select a hunting hypothesis · Pivot through logs to find evidence · Identify the persistence mechanism · Execute targeted remediation</p>
+</div>
+
+<!-- HUNTER CONFIDENCE -->
+<div class="panel">
+  <h3>HUNTER CONFIDENCE</h3>
+  <p style="opacity:0.7;font-size:0.85rem;">Tracks how well your hunt is staying focused and evidence-based. Good pivots increase it. Chasing dead ends drops it. Finish above 80% for a clean investigation report.</p>
+  <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+    <div style="flex:1;">
+      <div style="display:flex;justify-content:space-between;font-size:0.8rem;opacity:0.6;margin-bottom:4px;"><span>HUNTER CONFIDENCE</span><span id="hc-pct">70%</span></div>
+      <div id="hc-outer"><div id="hc-bar"></div></div>
+    </div>
+    <span id="hc-label" style="color:#ffaa00;font-size:0.85rem;">⚠ HUNTING — No confirmed target yet</span>
+  </div>
+</div>
+
+<!-- PHASE 1 — TRAFFIC BASELINE -->
+<div class="panel">
+  <h3>PHASE 1 — TRAFFIC BASELINE ANALYSIS</h3>
+  <p style="opacity:0.7;font-size:0.85rem;">Before you form a hypothesis you need to understand what normal looks like. The Vault's traffic monitor shows average hourly outbound volumes by destination type. Threat hunting starts with a baseline — anything that deviates from the pattern without a known cause is worth investigating. You're not looking for an alarm. You're looking for something that quietly doesn't belong.</p>
+  <br>
+  <button id="baseline-btn" onclick="loadBaseline()">▶ LOAD TRAFFIC BASELINE</button>
+  <div id="baseline-wrap" class="hidden" style="margin-top:14px;"></div>
+  <p id="baseline-status" style="margin-top:10px;font-size:0.85rem;color:#888;"></p>
+</div>
+
+<!-- PHASE 2 — HYPOTHESIS -->
+<div class="panel">
+  <h3>PHASE 2 — FORM A HUNTING HYPOTHESIS</h3>
+  <p style="opacity:0.7;font-size:0.85rem;">A hunting hypothesis is a specific, testable statement about what might be happening. It needs to be narrow enough to investigate — "something is wrong" is not a hypothesis. A good one names a technique, a target, and a predicted indicator. You've seen the baseline anomaly. Now commit to what you think it means.</p>
+  <p style="opacity:0.6;font-size:0.82rem;margin-top:6px;border-left:2px solid #00ffcc44;padding-left:10px;">
+    <strong style="color:#00ffcc;opacity:0.8;">HINT:</strong> Look at what you found in Phase 1 — the anomaly is outbound, low-volume, and highly regular in its timing. Attackers who want to avoid detection use beaconing: a compromised host calls back to a C2 server on a fixed schedule, often with small payloads specifically designed not to spike traffic thresholds. What would a slow beacon look like in a baseline chart?
+  </p>
+  <div id="hypothesis-wrap" style="margin-top:14px;display:flex;flex-direction:column;gap:8px;"></div>
+  <p id="hyp-status" style="margin-top:10px;font-size:0.85rem;"></p>
+</div>
+
+<!-- PHASE 3 — LOG PIVOT -->
+<div class="panel">
+  <h3>PHASE 3 — LOG PIVOTING</h3>
+  <p style="opacity:0.7;font-size:0.85rem;">You have a hypothesis: a slow beacon is running on one or more nodes. Now you need to find it. Pivoting means starting with one data source and following the evidence to the next. Each pivot either confirms you're on the right track or tells you to look elsewhere. You have four log sources — choose the sequence that builds toward confirming a hidden beaconing process.</p>
+  <p style="opacity:0.6;font-size:0.82rem;margin-top:6px;border-left:2px solid #00ffcc44;padding-left:10px;">
+    <strong style="color:#00ffcc;opacity:0.8;">HINT:</strong> A beacon is a running process that makes network calls on a schedule. The evidence trail goes: network logs (find the traffic) → process logs (find what's making it) → scheduled task logs (find how it survives reboot) → registry (confirm persistence). Start at the network and work inward.
+  </p>
+  <div id="pivot-wrap" style="margin-top:14px;"></div>
+  <p id="pivot-status" style="margin-top:10px;font-size:0.85rem;color:#888;"></p>
+</div>
+
+<!-- PHASE 4 — REMEDIATION -->
+<div class="panel">
+  <h3>PHASE 4 — TARGETED REMEDIATION</h3>
+  <p style="opacity:0.7;font-size:0.85rem;">You've found it: a scheduled task running a low-volume beacon to Asher's new relay node. The implant is small, quiet, and designed to survive reboots. Remediation needs to be surgical — remove every foothold without tipping Asher off that you found it before you're ready. Work through each step in order.</p>
+  <div id="rem-wrap" style="margin-top:14px;"></div>
+  <p id="rem-status" style="margin-top:10px;font-size:0.85rem;color:#888;"></p>
+</div>
+
+<div class="log" id="log">
+  <p class="info">// LAB 7 INITIALIZED — THREAT HUNT MODULE LOADED</p>
+  <p class="info">// No active alerts — beginning proactive hunt</p>
+</div>
+
+<div class="panel hidden" id="complete-panel" style="box-shadow:0 0 24px rgba(0,255,204,0.6);">
+  <h3 style="font-size:1.4rem;">✅ LAB 7 COMPLETE — THREAT NEUTRALIZED</h3>
+  <p>Beacon silenced. Persistence removed. Node clean before a single alert fired.</p>
+  <p style="color:#888;font-size:0.85rem;">In the scheduled task's working directory — a file that shouldn't exist: <code>relay_config.enc</code>. Encrypted, but the filename prefix matches the encoding scheme on Darwin Key Fragment 2. Asher wasn't just beaconing data out. He was searching for Darwin's fragments from the inside, using your own network as a search platform. He's found at least one. The Guild's cryptography team is now racing him to reconstruct the full key.</p>
+  <p><strong>SKILLS EARNED:</strong> Traffic Baseline Analysis · Hypothesis Formation · Log Pivoting · Proactive Remediation</p>
+  <p><strong>CAREER RELEVANCE:</strong> SOC Tier 2–3 · Threat Hunter · Senior Incident Responder</p>
+  <br>
+  <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;">
+    <a href="s1-lab8.html"><button>→ PROCEED TO LAB 8</button></a>
+    <a href="defenders-dashboard.html"><button style="border-color:#555;color:#888;">⌂ BACK TO DASHBOARD</button></a>
+  </div>
+</div>
+
+<script>
+const narrative=`> DEFENDERS GUILD — BOOTLOADER v1.0\n> Threat hunt mode: ACTIVE\n> Active alerts: NONE\n> Outbound traffic: +4.2% above 30-day baseline\n> Deviation cadence: REGULAR — every 5 minutes\n> No rule has fired. Something is hiding.\n> Defender — find it before it finds what it's looking for.`;
+let ci=0;const be=document.getElementById('boot-text');
+function typeIt(){if(ci<narrative.length){be.textContent+=narrative[ci++];setTimeout(typeIt,28);}else{be.classList.remove('typing-cursor');initLab();}}
+typeIt();
+
+// HUNTER CONFIDENCE
+let hc=70;
+function setHC(v){
+  hc=Math.max(0,Math.min(100,v));
+  document.getElementById('hc-pct').textContent=hc+'%';
+  document.getElementById('hc-bar').style.width=hc+'%';
+  const bar=document.getElementById('hc-bar'),lbl=document.getElementById('hc-label');
+  bar.classList.remove('high','low');
+  if(hc>=80){bar.classList.add('high');lbl.style.color='#00ffcc';lbl.textContent='✓ HIGH CONFIDENCE — Hunt on target';}
+  else if(hc>=55){lbl.style.color='#ffaa00';lbl.textContent='⚠ HUNTING — No confirmed target yet';}
+  else{bar.classList.add('low');lbl.style.color='#ff4444';lbl.textContent='⚠ DEGRADED — Hunt losing focus';}
+}
+
+const phases={p1:false,p2:false,p3:false,p4:false};
+function updatePB(){const d=Object.values(phases).filter(Boolean).length;document.getElementById('pb').style.width=(d/4*100)+'%';if(d===4)setTimeout(showComplete,600);}
+function lg(m,c=''){const l=document.getElementById('log');const p=document.createElement('p');if(c)p.className=c;p.textContent=m;l.appendChild(p);l.scrollTop=l.scrollHeight;}
+function cookie(m){document.getElementById('cookie-text').textContent=m;}
+
+function initLab(){
+  buildHypotheses();
+  buildPivots();
+  buildRemediation();
+  cookie('No alerts. But that traffic deviation is too regular to be random. Start with the baseline.');
+}
+
+// PHASE 1 — BASELINE
+const trafficData=[
+  {label:'DNS (internal)',baseline:120,current:122,normal:true},
+  {label:'HTTPS (known)',baseline:890,current:901,normal:true},
+  {label:'SMTP (outbound)',baseline:44,current:43,normal:true},
+  {label:'HTTPS (unknown)',baseline:12,current:89,normal:false,note:'↑ 642% above baseline — regular 5-min intervals'},
+  {label:'SMB (internal)',baseline:340,current:338,normal:true},
+  {label:'NTP (time sync)',baseline:8,current:8,normal:true},
+];
+function loadBaseline(){
+  document.getElementById('baseline-btn').disabled=true;
+  lg('> Loading 30-day traffic baseline...');
+  cookie('Compare current volumes against the baseline. You\'re looking for something regular that shouldn\'t be there.');
+  const wrap=document.getElementById('baseline-wrap');
+  wrap.classList.remove('hidden');
+  wrap.innerHTML=`<div class="traffic-chart">
+    <div style="display:flex;gap:20px;font-size:0.72rem;opacity:0.5;margin-bottom:10px;">
+      <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:#00ffcc44;display:inline-block;border-radius:1px;"></span>BASELINE</span>
+      <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:#00ffcc;display:inline-block;border-radius:1px;"></span>CURRENT</span>
+      <span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:#ff4444;display:inline-block;border-radius:1px;"></span>ANOMALY</span>
+    </div>
+    ${trafficData.map(t=>{
+      const maxVal=Math.max(t.baseline,t.current,10);
+      const bPct=Math.round(t.baseline/maxVal*100);
+      const cPct=Math.round(t.current/maxVal*100);
+      return `<div class="tc-row">
+        <span class="tc-label">${t.label}</span>
+        <div style="flex:1;display:flex;flex-direction:column;gap:3px;">
+          <div class="tc-bar-wrap"><div class="tc-fill" style="width:${bPct}%;opacity:0.35;"></div></div>
+          <div class="tc-bar-wrap"><div class="tc-fill ${t.normal?'':'spike'}" style="width:${cPct}%;"></div></div>
+        </div>
+        <span class="tc-val" style="color:${t.normal?'#555':'#ff4444'}">${t.current} KB/h</span>
+      </div>${t.note?`<div style="font-size:0.72rem;color:#ff4444;margin:-4px 0 6px 90px;">${t.note}</div>`:''}`;
+    }).join('')}
+  </div>`;
+  setTimeout(()=>{
+    lg('> Baseline loaded. 30-day average computed across 6 traffic types.','info');
+    lg('> ANOMALY: HTTPS (unknown destinations) — 642% above baseline','danger');
+    lg('> Anomaly cadence: packets every 300 seconds — consistent to ±2s','warn');
+    document.getElementById('baseline-status').innerHTML='<span style="color:#ff4444;">⚠ Anomaly detected: HTTPS traffic to unknown destinations — regular 5-minute cadence. Phase 1 complete.</span>';
+    phases.p1=true;updatePB();setHC(hc+8);
+    cookie('There it is. 642% over baseline, every 5 minutes on the dot. That\'s not a user. That\'s a machine calling home.');
+  },1800);
+}
+
+// PHASE 2 — HYPOTHESIS
+const hypotheses=[
+  {
+    text:'A compromised host is running a slow C2 beacon — calling out to an external relay every 5 minutes to receive instructions and avoid threshold-based detection',
+    correct:true,
+    feedback:'Strong hypothesis. It\'s specific, testable, and matches the evidence: regular cadence, unknown destinations, low volume designed to stay quiet. This gives you a clear pivot path.'
+  },
+  {
+    text:'A misconfigured monitoring agent is generating spurious outbound checks due to a software update conflict',
+    correct:false,
+    feedback:'Possible, but it doesn\'t explain the unknown destinations or the exact 5-minute regularity. Monitoring agents call known vendor infrastructure. This hypothesis doesn\'t fit the data well enough to lead a hunt.'
+  },
+  {
+    text:'Elevated user activity is causing slightly higher-than-normal HTTPS browsing to unrecognized external sites',
+    correct:false,
+    feedback:'User browsing doesn\'t produce machine-regular 300-second intervals. Humans don\'t click links every 5 minutes with 2-second precision. This anomaly has a programmatic signature.'
+  },
+];
+let hypDone=false;
+function buildHypotheses(){
+  const wrap=document.getElementById('hypothesis-wrap');
+  hypotheses.forEach((h,i)=>{
+    const d=document.createElement('div');d.className='pivot-card';
+    d.innerHTML=`<h4>HYPOTHESIS ${String.fromCharCode(65+i)}</h4><p>${h.text}</p>`;
+    d.onclick=()=>selectHypothesis(i,d,h);
+    wrap.appendChild(d);
+  });
+}
+function selectHypothesis(i,el,h){
+  if(hypDone)return;
+  document.querySelectorAll('#hypothesis-wrap .pivot-card').forEach(c=>{c.onclick=null;c.style.cursor='default';});
+  const st=document.getElementById('hyp-status');
+  if(h.correct){
+    hypDone=true;
+    el.classList.add('chosen-right');
+    st.innerHTML=`<span style="color:#00ffcc;">✓ ${h.feedback} Phase 2 complete.</span>`;
+    phases.p2=true;updatePB();setHC(hc+8);
+    lg('> Hypothesis selected: slow C2 beacon — 5-minute cadence','success');
+    cookie('Good hypothesis. Testable and specific. Now pivot through the logs to find the process behind it.');
+  } else {
+    el.classList.add('chosen-wrong');
+    st.innerHTML=`<span style="color:#ffaa00;">⚠ ${h.feedback}</span>`;
+    setHC(hc-7);
+    lg('> Hypothesis rejected — doesn\'t match the evidence pattern','warn');
+    cookie('That doesn\'t fit. Think about what produces machine-perfect 5-minute intervals.');
+    setTimeout(()=>{
+      el.classList.remove('chosen-wrong');
+      document.querySelectorAll('#hypothesis-wrap .pivot-card').forEach((c,ci)=>{
+        c.onclick=()=>selectHypothesis(ci,c,hypotheses[ci]);c.style.cursor='pointer';
+      });
+    },1200);
+  }
+}
+
+// PHASE 3 — PIVOTING
+const pivots=[
+  {
+    id:'pv1',
+    title:'NETWORK FLOW LOGS — Filter for unknown destinations',
+    desc:'Examine per-connection records. Filter to HTTPS traffic hitting IPs not on the Vault\'s allowlist.',
+    correct:true,
+    order:1,
+    finding:'MATCH: 10.0.0.22 → 185.220.101.47:443 — 48 connections in last 4 hours, exactly 300s apart. 2.1KB per connection.'
+  },
+  {
+    id:'pv2',
+    title:'PRINTER & PERIPHERAL LOGS — Check device events',
+    desc:'Review events from connected peripherals and print spoolers.',
+    correct:false,
+    finding:'No anomalies. Printer traffic is normal. This pivot is a dead end.'
+  },
+  {
+    id:'pv3',
+    title:'PROCESS CREATION LOGS — Node 10.0.0.22',
+    desc:'Check what processes are running on the suspected host. Look for anything spawned from an unusual parent or running from a temp directory.',
+    correct:true,
+    order:2,
+    finding:'MATCH: relay_svc.exe (PID 7741) — spawned by schtasks.exe — running from C:\\Windows\\Temp\\sys32_upd\\ — first seen 72 hours ago.'
+  },
+  {
+    id:'pv4',
+    title:'SCHEDULED TASK LOGS — All hosts',
+    desc:'List all registered scheduled tasks across the Vault. Look for tasks created recently or running from unexpected directories.',
+    correct:true,
+    order:3,
+    finding:'MATCH: Task "WindowsSystemCheck32" — created 72h ago — runs relay_svc.exe every 5 minutes — set to run as SYSTEM — hidden from task scheduler UI.'
+  },
+  {
+    id:'pv5',
+    title:'BACKUP ROTATION LOGS — Storage tier events',
+    desc:'Check backup completion and rotation logs on the storage tier.',
+    correct:false,
+    finding:'Backup schedule running normally. No anomalies. This pivot is a dead end.'
+  },
+  {
+    id:'pv6',
+    title:'REGISTRY — HKLM Run keys on Node 10.0.0.22',
+    desc:'Check autorun registry keys to see if the implant has a secondary persistence mechanism beyond the scheduled task.',
+    correct:true,
+    order:4,
+    finding:'MATCH: HKLM\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run\\SysUpd32 → C:\\Windows\\Temp\\sys32_upd\\relay_svc.exe — written same timestamp as task creation.'
+  },
+];
+let pivotsDone={},pivotOrder=0,pivotPhase3Done=false;
+function buildPivots(){
+  const wrap=document.getElementById('pivot-wrap');
+  wrap.innerHTML='<p style="font-size:0.78rem;opacity:0.6;margin-bottom:10px;">Choose your pivot sources in the order that builds toward the beacon — start from the network and work inward:</p>';
+  const shuffled=[...pivots].sort(()=>Math.random()-0.5);
+  shuffled.forEach(p=>{
+    const d=document.createElement('div');d.className='pivot-card';d.id='pv-'+p.id;
+    d.innerHTML=`<h4>${p.title}</h4><p>${p.desc}</p><div id="pvfind-${p.id}" style="display:none;margin-top:8px;font-size:0.78rem;padding:8px;background:#001;border-radius:3px;"></div>`;
+    d.onclick=()=>doPivot(p,d);
+    wrap.appendChild(d);
+  });
+}
+function doPivot(p,el){
+  if(pivotsDone[p.id])return;
+  pivotsDone[p.id]=true;
+  el.style.cursor='default';el.onclick=null;
+  const findEl=document.getElementById('pvfind-'+p.id);
+  findEl.style.display='block';
+  if(p.correct){
+    pivotOrder++;
+    const expectedOrder=p.order;
+    const inSequence=pivotOrder===expectedOrder||pivotOrder<=expectedOrder+1;
+    el.classList.add('chosen-right');
+    findEl.style.color='#00ffcc';
+    findEl.textContent='> '+p.finding;
+    setHC(hc+6);
+    lg(`> Pivot: ${p.title.split(' — ')[0]} — ${p.finding.split(':')[0]+': evidence found'}`,'success');
+    cookie('Evidence confirmed. Keep following the chain inward.');
+    const correctSoFar=Object.values(pivotsDone).filter(Boolean).length;
+    const correctPivots=pivots.filter(pv=>pv.correct&&pivotsDone[pv.id]).length;
+    if(correctPivots>=4&&!pivotPhase3Done){
+      pivotPhase3Done=true;
+      setTimeout(()=>{
+        document.getElementById('pivot-status').innerHTML='<span style="color:#00ffcc;">✓ All evidence gathered. Beacon confirmed on Node 10.0.0.22. Persistence mechanism identified. Phase 3 complete.</span>';
+        phases.p3=true;updatePB();
+        cookie('Four pivots, four hits. You found the beacon, the process, the task, and the registry key. Nothing is hiding now.');
+        lg('> Phase 3 complete. Full persistence chain mapped.','success');
+      },600);
+    }
+  } else {
+    el.classList.add('chosen-wrong');
+    findEl.style.color='#555';
+    findEl.textContent='> '+p.finding;
+    setHC(hc-5);
+    lg('> Dead end pivot — no relevant evidence found','warn');
+    cookie('Nothing there. A beacon doesn\'t leave traces in peripheral logs. Follow the network evidence inward.');
+  }
+}
+
+// PHASE 4 — REMEDIATION
+const remSteps=[
+  {id:'rs1',action:'ISOLATE NODE 10.0.0.22',detail:'Cut the host from the network before removing anything. This stops the beacon mid-cycle and prevents Asher receiving an alert that his implant went quiet.',btn:'▶ ISOLATE HOST',result:'Node 10.0.0.22 isolated from Vault network. Beacon severed mid-interval.'},
+  {id:'rs2',action:'TERMINATE PROCESS relay_svc.exe',detail:'Kill the running beacon process. PID 7741. This stops active communication but doesn\'t remove the persistence — the task will relaunch it on the next 5-minute cycle if not removed first.',btn:'▶ TERMINATE PROCESS',result:'relay_svc.exe (PID 7741) terminated. Process tree logged for evidence.'},
+  {id:'rs3',action:'DELETE SCHEDULED TASK "WindowsSystemCheck32"',detail:'Remove the task that relaunches the beacon. Without this step, any reboot or task cycle will bring the implant back online.',btn:'▶ DELETE SCHEDULED TASK',result:'Scheduled task "WindowsSystemCheck32" deleted. No further launches possible.'},
+  {id:'rs4',action:'REMOVE REGISTRY AUTORUN KEY',detail:'Delete the HKLM Run key. Belt and suspenders — the task is gone, but this secondary persistence fallback needs to be removed too.',btn:'▶ REMOVE REGISTRY KEY',result:'HKLM\\...\\Run\\SysUpd32 deleted. No secondary persistence path remains.'},
+  {id:'rs5',action:'DELETE IMPLANT FILES',detail:'Remove relay_svc.exe and the full C:\\Windows\\Temp\\sys32_upd\\ directory. Preserve a copy to the forensic store first for evidence.',btn:'▶ DELETE & PRESERVE EVIDENCE',result:'Implant files deleted. Evidence copy written to /forensic-store/lab7/. Directory cleaned.'},
+];
+let remIndex=0,remDone=false;
+function buildRemediation(){
+  const wrap=document.getElementById('rem-wrap');
+  remSteps.forEach((rs,i)=>{
+    const d=document.createElement('div');d.className='rem-step';d.id='rs-'+rs.id;
+    d.innerHTML=`<div class="step-desc"><strong style="font-size:0.85rem;">${i+1}. ${rs.action}</strong><br><span style="font-size:0.8rem;opacity:0.6;">${rs.detail}</span></div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+      <button id="rsbtn-${rs.id}" onclick="doRemStep(${i})" ${i>0?'disabled':''}>${rs.btn}</button>
+      <span class="step-result" id="rsres-${rs.id}" style="color:#00ffcc;font-size:0.78rem;text-align:right;max-width:200px;"></span>
+    </div>`;
+    wrap.appendChild(d);
+  });
+}
+function doRemStep(i){
+  const rs=remSteps[i];
+  document.getElementById('rsbtn-'+rs.id).disabled=true;
+  lg(`> ${rs.action}...`,'warn');
+  setTimeout(()=>{
+    const resEl=document.getElementById('rsres-'+rs.id);
+    resEl.textContent=rs.result;
+    resEl.classList.add('show');
+    document.getElementById('rs-'+rs.id).style.borderColor='#00ffcc';
+    lg(`> ${rs.result}`,'success');
+    setHC(hc+4);
+    if(i<remSteps.length-1){
+      document.getElementById('rsbtn-'+remSteps[i+1].id).disabled=false;
+      cookie(`Step ${i+1} done. Next: ${remSteps[i+1].action.toLowerCase()}.`);
+    }
+    if(i===remSteps.length-1&&!remDone){
+      remDone=true;
+      document.getElementById('rem-status').innerHTML='<span style="color:#00ffcc;">✓ All remediation steps complete. Node clean. Beacon gone. Phase 4 complete.</span>';
+      phases.p4=true;updatePB();
+      cookie('Five steps, all clean. The beacon is dead, the persistence is gone, and the evidence is preserved. That\'s a complete hunt.');
+      lg('> Phase 4 complete. Node 10.0.0.22 fully remediated.','success');
+    }
+  },900);
+}
+
+function showComplete(){
+  document.getElementById('complete-panel').classList.remove('hidden');
+  document.getElementById('complete-panel').scrollIntoView({behavior:'smooth'});
+  lg('>>> LAB 7 COMPLETE. THREAT HUNT SUCCESSFUL. BEACON NEUTRALIZED. <<<','success');
+  cookie('Lab 7 done. You found what the alerts missed. That encrypted file though — Asher was searching for Darwin\'s key fragments using your own network. He\'s one step ahead. For now.');
+}
+</script>
+</body>
+</html>

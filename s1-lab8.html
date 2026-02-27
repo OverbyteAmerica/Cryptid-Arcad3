@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DEFENDERS — Lab 8: Mirror Node Red vs Blue</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;}
+body{background-color:#000;color:#00ffcc;font-family:'Courier New',Courier,monospace;font-size:16px;line-height:1.4;margin:0;padding:20px;overflow-x:hidden;}
+h1,h2,h3,h4{font-family:'Courier New',Courier,monospace;color:#00ffcc;margin:0 0 12px 0;}
+h1{font-size:2rem;}h2{font-size:1.6rem;}h3{font-size:1.3rem;}
+a{color:#00ffcc;text-decoration:none;}a:hover{text-decoration:underline;}
+.hidden{display:none;}.center{text-align:center;}
+.panel{border:1px solid #00ffcc;padding:18px;margin:20px 0;background-color:rgba(0,0,0,0.85);border-radius:6px;box-shadow:0 0 12px rgba(0,255,204,0.4);}
+button{background-color:#000;border:1px solid #00ffcc;color:#00ffcc;padding:10px 16px;cursor:pointer;font-family:monospace;font-size:0.95rem;border-radius:4px;transition:all 0.2s ease;display:inline-block;}
+button:hover{background-color:#002;box-shadow:0 0 8px #00ffcc;}
+button:disabled{opacity:0.4;cursor:not-allowed;}
+#cookie{position:fixed;top:20px;right:20px;width:240px;border:1px solid #00ffcc;background:#000;padding:12px;box-shadow:0 0 18px rgba(0,255,204,.5);font-size:0.9rem;z-index:9999;border-radius:8px;}
+#cookie-avatar{font-size:1.6rem;margin-bottom:6px;}
+#cookie-text{opacity:0.95;line-height:1.4;}
+#cookie::before{content:"";position:absolute;inset:0;background:linear-gradient(rgba(0,255,204,0.05),transparent);pointer-events:none;}
+.boot{font-size:1.1rem;margin-bottom:20px;white-space:pre-wrap;word-break:break-word;min-height:60px;}
+.typing-cursor::after{content:"_";animation:blink 1s step-end infinite;}
+@keyframes blink{from,to{opacity:0;}50%{opacity:1;}}
+.log{background-color:#001;border:1px solid #00ffcc;padding:12px;margin-top:20px;height:220px;overflow-y:auto;font-size:0.85rem;border-radius:4px;box-shadow:0 0 10px rgba(0,255,204,0.3);}
+.log p{margin:3px 0;}.warn{color:#ffaa00;}.danger{color:#ff4444;}.success{color:#00ffcc;}.info{color:#888;}
+#pb-outer{background:rgba(0,255,204,0.1);border:1px solid #00ffcc44;border-radius:4px;height:8px;margin:10px 0 20px;overflow:hidden;}
+#pb{height:100%;background:#00ffcc;width:0%;transition:width 0.5s ease;box-shadow:0 0 8px #00ffcc;}
+/* defense score bar */
+#ds-outer{background:rgba(0,255,204,0.1);border:1px solid #00ffcc44;border-radius:4px;height:12px;margin:6px 0 4px;overflow:hidden;}
+#ds-bar{height:100%;background:#ffaa00;width:75%;transition:width 0.5s ease;}
+#ds-bar.high{background:#00ffcc;box-shadow:0 0 6px #00ffcc;}
+#ds-bar.low{background:#ff4444;}
+/* red team ticker */
+#rt-ticker{background:#001;border:1px solid rgba(255,68,68,0.3);border-radius:4px;padding:10px 14px;font-size:0.8rem;color:#ff4444;margin:10px 0;min-height:36px;}
+/* attack phase tracker */
+.phase-track{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0;}
+.phase-pip{padding:5px 12px;border:1px solid #333;border-radius:3px;font-size:0.75rem;color:#444;transition:all 0.3s;}
+.phase-pip.active{border-color:#ffaa00;color:#ffaa00;box-shadow:0 0 6px rgba(255,170,0,0.3);}
+.phase-pip.done{border-color:#00ffcc;color:#00ffcc;}
+.phase-pip.failed{border-color:#ff4444;color:#ff4444;}
+/* response options */
+.response-card{border:1px solid rgba(0,255,204,0.22);border-radius:4px;padding:14px;margin:8px 0;cursor:pointer;transition:all 0.2s;font-size:0.85rem;}
+.response-card:hover{background:rgba(0,255,204,0.03);border-color:#00ffcc55;}
+.response-card h4{margin:0 0 5px;font-size:0.88rem;}
+.response-card .rc-detail{margin:0;opacity:0.6;font-size:0.8rem;line-height:1.5;}
+.response-card .rc-cost{margin-top:6px;font-size:0.75rem;opacity:0.5;font-style:italic;}
+.response-card.chosen-right{border-color:#00ffcc;background:rgba(0,255,204,0.04);}
+.response-card.chosen-wrong{border-color:#ff4444;background:rgba(255,68,68,0.04);}
+/* intel feed */
+.intel-item{display:flex;gap:10px;padding:9px 12px;border:1px solid rgba(0,255,204,0.15);border-radius:3px;margin:6px 0;font-size:0.82rem;}
+.intel-item .intel-tag{min-width:80px;font-size:0.72rem;padding:2px 6px;border-radius:2px;text-align:center;align-self:flex-start;margin-top:2px;}
+.it-red{background:rgba(255,68,68,0.15);color:#ff4444;border:1px solid #ff4444;}
+.it-blue{background:rgba(0,255,204,0.1);color:#00ffcc;border:1px solid #00ffcc;}
+.it-warn{background:rgba(255,170,0,0.1);color:#ffaa00;border:1px solid #ffaa00;}
+</style>
+</head>
+<body>
+
+<div id="cookie"><div id="cookie-avatar">🐾</div><div id="cookie-text">COOKIE v1.3 — Mirror Node online. Red Team is already inside the simulation. Clock is running.</div></div>
+
+<h1>DEFENDERS GUILD</h1>
+<p style="opacity:0.6;margin:0 0 4px;">SEASON 1 — PHASE 4: ADVERSARY SIMULATION</p>
+<h2>LAB 08 // MIRROR NODE: RED VS BLUE</h2>
+<div id="pb-outer"><div id="pb"></div></div>
+
+<div class="panel"><div class="boot typing-cursor" id="boot-text"></div></div>
+
+<div class="panel">
+  <h3>📋 MISSION BRIEF</h3>
+  <p><strong>Skill Focus:</strong> Attack chain recognition · Timed response decisions · Defense-in-depth · Red team thinking</p>
+  <p><strong>Role Alignment:</strong> SOC Tier 2–3 / Blue Team Lead</p>
+  <p><strong>Story Context:</strong> The Guild runs a Mirror Node — a sandboxed replica of the Vault used exclusively for adversary simulation. A Red Team using Asher's known techniques has been authorized to run a live attack chain against it. Your job is the Blue Team: detect each phase of the attack as it unfolds and make the right response call before the Red Team advances to the next stage. Every correct decision costs the Red Team time. Every wrong call gives them ground. This is the closest thing to a real intrusion without real consequences — but the skills are identical.</p>
+  <p><strong>Objectives:</strong> Detect initial access before it becomes execution · Contain privilege escalation · Block lateral movement · Prevent data exfiltration · Achieve a clean defense score</p>
+</div>
+
+<!-- DEFENSE SCORE -->
+<div class="panel">
+  <h3>DEFENSE SCORE</h3>
+  <p style="opacity:0.7;font-size:0.85rem;">Tracks how effectively the Blue Team is containing the Red Team's progress. Every correct response at the right speed earns points. Delays and wrong calls let the Red Team advance. Finish above 80% to certify the Mirror Node defense as successful.</p>
+  <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+    <div style="flex:1;">
+      <div style="display:flex;justify-content:space-between;font-size:0.8rem;opacity:0.6;margin-bottom:4px;"><span>DEFENSE SCORE</span><span id="ds-pct">75%</span></div>
+      <div id="ds-outer"><div id="ds-bar"></div></div>
+    </div>
+    <span id="ds-label" style="color:#ffaa00;font-size:0.85rem;">⚠ RED TEAM ACTIVE</span>
+  </div>
+  <div class="phase-track" id="phase-track">
+    <div class="phase-pip" id="pip1">INITIAL ACCESS</div>
+    <div class="phase-pip" id="pip2">PRIV ESCALATION</div>
+    <div class="phase-pip" id="pip3">LATERAL MOVEMENT</div>
+    <div class="phase-pip" id="pip4">EXFILTRATION</div>
+  </div>
+</div>
+
+<!-- RED TEAM INTEL FEED -->
+<div class="panel">
+  <h3>RED TEAM INTEL FEED</h3>
+  <p style="opacity:0.7;font-size:0.85rem;">The simulation framework gives Blue Team a live feed of Red Team actions as they happen — this mirrors how a real SOC receives alerts. Read each entry carefully before choosing your response. The Red Team's technique determines what the correct counter is.</p>
+  <div id="rt-ticker">// Awaiting Red Team action...</div>
+  <div id="intel-log" style="margin-top:10px;max-height:200px;overflow-y:auto;"></div>
+</div>
+
+<!-- PHASE 1 -->
+<div class="panel" id="sim-phase1">
+  <h3>PHASE 1 — INITIAL ACCESS RESPONSE</h3>
+  <p style="opacity:0.7;font-size:0.85rem;">Red Team has launched a spear-phishing campaign against Mirror Node accounts. The attack email has been opened. You have a narrow window to detect the compromise before the payload executes and the Red Team establishes a foothold. Speed matters here — every 30 seconds of delay lets the payload run further.</p>
+  <p style="opacity:0.6;font-size:0.82rem;margin-top:6px;border-left:2px solid #00ffcc44;padding-left:10px;">
+    <strong style="color:#00ffcc;opacity:0.8;">HINT:</strong> Your strongest signal right now is correlation — a login from a new location, combined with the email metadata, combined with a new process spawning from the mail client. Any one alone is weak. All three together is a confirmed compromise. What's the fastest way to cut off the attacker's foothold without taking down the whole system?
+  </p>
+  <div id="phase1-options" style="margin-top:14px;"></div>
+  <p id="phase1-status" style="margin-top:10px;font-size:0.85rem;"></p>
+</div>
+
+<!-- PHASE 2 -->
+<div class="panel" id="sim-phase2">
+  <h3>PHASE 2 — PRIVILEGE ESCALATION RESPONSE</h3>
+  <p style="opacity:0.7;font-size:0.85rem;">The Red Team's payload is running under a standard user account. They're now attempting to escalate privileges using a token manipulation technique — impersonating a higher-privileged process to gain admin access. If they succeed, every subsequent action becomes harder to stop.</p>
+  <p style="opacity:0.6;font-size:0.82rem;margin-top:6px;border-left:2px solid #00ffcc44;padding-left:10px;">
+    <strong style="color:#00ffcc;opacity:0.8;">HINT:</strong> Token manipulation works by duplicating an existing high-privilege process token. The defense is to deny the impersonation call before it completes — this requires acting on the process-level signal, not waiting for a downstream effect. What stops an escalation attempt at the source?
+  </p>
+  <div id="phase2-options" style="margin-top:14px;"></div>
+  <p id="phase2-status" style="margin-top:10px;font-size:0.85rem;"></p>
+</div>
+
+<!-- PHASE 3 -->
+<div class="panel" id="sim-phase3">
+  <h3>PHASE 3 — LATERAL MOVEMENT RESPONSE</h3>
+  <p style="opacity:0.7;font-size:0.85rem;">Escalation contained — but the Red Team already had time to harvest one set of credentials before you locked them down. They're now using those credentials to move laterally via SMB, targeting the Mirror Node's data tier. Stopping lateral movement means thinking in subnets, not individual IPs.</p>
+  <p style="opacity:0.6;font-size:0.82rem;margin-top:6px;border-left:2px solid #00ffcc44;padding-left:10px;">
+    <strong style="color:#00ffcc;opacity:0.8;">HINT:</strong> You've seen this before in Lab 4. Individual IP blocks are reactive — by the time you identify and block each node, the Red Team has already moved past it. The credential set they're using has access to an entire subnet. What's the correct scope of containment?
+  </p>
+  <div id="phase3-options" style="margin-top:14px;"></div>
+  <p id="phase3-status" style="margin-top:10px;font-size:0.85rem;"></p>
+</div>
+
+<!-- PHASE 4 -->
+<div class="panel" id="sim-phase4">
+  <h3>PHASE 4 — EXFILTRATION RESPONSE</h3>
+  <p style="opacity:0.7;font-size:0.85rem;">Final phase. The Red Team has staged data on a compromised node and is initiating an outbound encrypted transfer. This is the last line of defense. Your goal: block the exfiltration completely and preserve every log needed to reconstruct what they accessed, so the Guild can assess real-world impact if this had been the actual Vault.</p>
+  <p style="opacity:0.6;font-size:0.82rem;margin-top:6px;border-left:2px solid #00ffcc44;padding-left:10px;">
+    <strong style="color:#00ffcc;opacity:0.8;">HINT:</strong> Blocking the transfer isn't enough on its own — you need the evidence too. Throttling buys seconds but doesn't stop the data leaving. The right move simultaneously cuts egress and captures what was staged. Think about what a forensics team needs after the fact.
+  </p>
+  <div id="phase4-options" style="margin-top:14px;"></div>
+  <p id="phase4-status" style="margin-top:10px;font-size:0.85rem;"></p>
+</div>
+
+<div class="log" id="log">
+  <p class="info">// LAB 8 INITIALIZED — MIRROR NODE SIMULATION ACTIVE</p>
+  <p class="info">// Red Team: AUTHORIZED — using Asher's known technique set</p>
+  <p class="info">// Blue Team: READY — awaiting first contact</p>
+</div>
+
+<div class="panel hidden" id="complete-panel" style="box-shadow:0 0 24px rgba(0,255,204,0.6);">
+  <h3 style="font-size:1.4rem;">✅ LAB 8 COMPLETE — MIRROR NODE DEFENDED</h3>
+  <p>Red Team neutralized across all four phases. Defense score certified.</p>
+  <p style="color:#888;font-size:0.85rem;">In the post-simulation debrief, the Red Team flagged something unusual: during the exfiltration phase, the data they staged wasn't from the Mirror Node's test dataset. It was a partial decrypt of Darwin Key Fragment 2 — somehow pulled from the forensic store you built in Lab 7. Someone gave the Red Team real data to use as cover. Either the simulation was compromised from inside, or Asher has a contact within the Guild itself. The hunt for the fragments just got a lot more complicated.</p>
+  <p><strong>SKILLS EARNED:</strong> Red Team Thinking · Attack Chain Recognition · Timed Response · Defense-in-Depth</p>
+  <p><strong>CAREER RELEVANCE:</strong> SOC Tier 2–3 · Blue Team Lead · Security Operations Manager</p>
+  <br>
+  <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;">
+    <a href="s1-lab9.html"><button>→ PROCEED TO LAB 9</button></a>
+    <a href="defenders-dashboard.html"><button style="border-color:#555;color:#888;">⌂ BACK TO DASHBOARD</button></a>
+  </div>
+</div>
+
+<script>
+const narrative=`> DEFENDERS GUILD — BOOTLOADER v1.0\n> Mirror Node: ONLINE\n> Red Team authorization: CONFIRMED\n> Attack technique set: ASHER-PLAYBOOK-v4\n> Blue Team window: ACTIVE\n> Simulation fidelity: HIGH — responses carry real-world weight\n> Defender — the Red Team has already started. Catch up.`;
+let ci=0;const be=document.getElementById('boot-text');
+function typeIt(){if(ci<narrative.length){be.textContent+=narrative[ci++];setTimeout(typeIt,28);}else{be.classList.remove('typing-cursor');initSim();}}
+typeIt();
+
+// DEFENSE SCORE
+let ds=75;
+function setDS(v){
+  ds=Math.max(0,Math.min(100,v));
+  document.getElementById('ds-pct').textContent=ds+'%';
+  document.getElementById('ds-bar').style.width=ds+'%';
+  const bar=document.getElementById('ds-bar'),lbl=document.getElementById('ds-label');
+  bar.classList.remove('high','low');
+  if(ds>=80){bar.classList.add('high');lbl.style.color='#00ffcc';lbl.textContent='✓ BLUE TEAM WINNING';}
+  else if(ds>=55){lbl.style.color='#ffaa00';lbl.textContent='⚠ RED TEAM ACTIVE';}
+  else{bar.classList.add('low');lbl.style.color='#ff4444';lbl.textContent='⚠ RED TEAM ADVANCING';}
+}
+function setPip(n,state){document.getElementById('pip'+n).className='phase-pip '+state;}
+
+const phases={p1:false,p2:false,p3:false,p4:false};
+function updatePB(){const d=Object.values(phases).filter(Boolean).length;document.getElementById('pb').style.width=(d/4*100)+'%';if(d===4)setTimeout(showComplete,600);}
+function lg(m,c=''){const l=document.getElementById('log');const p=document.createElement('p');if(c)p.className=c;p.textContent=m;l.appendChild(p);l.scrollTop=l.scrollHeight;}
+function cookie(m){document.getElementById('cookie-text').textContent=m;}
+function intel(tag,tagClass,text){
+  const wrap=document.getElementById('intel-log');
+  const d=document.createElement('div');d.className='intel-item';
+  d.innerHTML=`<span class="intel-tag ${tagClass}">${tag}</span><span>${text}</span>`;
+  wrap.prepend(d);
+  document.getElementById('rt-ticker').textContent=text;
+}
+function ticker(msg){document.getElementById('rt-ticker').textContent=msg;}
+
+// PHASE DATA
+const simPhases=[
+  {
+    id:'phase1', pip:1,
+    rtActions:[
+      {delay:0,tag:'RED',cls:'it-red',text:'Spear-phish delivered to vault-user@mirror.net — attachment opened at 09:14:02'},
+      {delay:2000,tag:'RED',cls:'it-red',text:'New process spawned: byte_agent.bin from outlook.exe — PID 4412 — running in %TEMP%'},
+      {delay:4000,tag:'SIGNAL',cls:'it-warn',text:'Login from new geographic region detected on same account — 09:14:18'},
+    ],
+    options:[
+      {title:'CORRELATE & CONTAIN — Revoke session + sandbox process',detail:'Pull the login session immediately, sandbox the spawned process so it can\'t make network calls, and flag the account for analyst review. Fast, targeted, preserves evidence.',cost:'Blue Team response time: 47 seconds. Red Team foothold: DENIED.',correct:true,feedback:'Correct. You correlated three signals — email, process, login anomaly — and acted before the payload could establish outbound comms. The Red Team\'s foothold is denied before it\'s stable.'},
+      {title:'WAIT FOR MORE SIGNALS — Monitor and collect data',detail:'The evidence is suggestive but not certain. Gather more data before acting to avoid disrupting a legitimate user.',cost:'Estimated wait: 4–8 minutes. Red Team advance: LIKELY.',correct:false,feedback:'Too slow. By the time more signals arrive, byte_agent.bin will have established its C2 beacon. In adversary simulation, a confirmed process spawn from a mail client plus a geographic anomaly is sufficient to act. Waiting is ceding ground.'},
+      {title:'BLOCK EMAIL DOMAIN — Prevent further phishing',detail:'Block the sending domain at the email gateway to stop any further phishing attempts from the same source.',cost:'Domain block applied. Current infection: UNAFFECTED.',correct:false,feedback:'Blocking the domain prevents future phishing but does nothing about the payload that\'s already running. The attacker is past the email stage — you need to deal with the process, not the delivery mechanism.'},
+    ]
+  },
+  {
+    id:'phase2', pip:2,
+    rtActions:[
+      {delay:0,tag:'RED',cls:'it-red',text:'Token impersonation attempt — byte_agent.bin targeting lsass.exe token (SYSTEM level)'},
+      {delay:2000,tag:'RED',cls:'it-red',text:'SeImpersonatePrivilege abuse detected — attempting to duplicate SYSTEM token'},
+      {delay:3500,tag:'SIGNAL',cls:'it-warn',text:'Anomalous API call: DuplicateTokenEx from PID 4412 — targeting PID 624 (lsass)'},
+    ],
+    options:[
+      {title:'TERMINATE PROCESS + REVOKE PRIVILEGES',detail:'Kill PID 4412 immediately and revoke all token impersonation privileges for the compromised account. Stop the escalation call before it completes.',cost:'Process terminated before token duplicated. Escalation: BLOCKED.',correct:true,feedback:'Correct. Terminating the process mid-escalation-attempt is the right move. You caught the API call signature before DuplicateTokenEx completed. The account stays at user-level and can\'t move further.'},
+      {title:'MONITOR QUIETLY — LOG THE TECHNIQUE',detail:'The escalation attempt is valuable intelligence. Let it run in a monitored state to understand the full technique before intervening.',cost:'Token duplication: ALLOWED. Red Team now running as SYSTEM.',correct:false,feedback:'Monitoring an active privilege escalation in production — even a simulation — hands the Red Team admin access. Technique documentation has its place in a fully sandboxed environment, not against a live node. You\'ve lost the escalation phase.'},
+      {title:'PATCH THE VULNERABILITY — Schedule a fix',detail:'Log the technique and schedule a privilege escalation patch for the next maintenance window.',cost:'Patch scheduled. Current escalation: UNIMPEDED.',correct:false,feedback:'Patching addresses the long-term vulnerability but does nothing right now. The Red Team is making the API call this second. Scheduling a patch while an attacker is actively escalating is the wrong time horizon entirely.'},
+    ]
+  },
+  {
+    id:'phase3', pip:3,
+    rtActions:[
+      {delay:0,tag:'RED',cls:'it-red',text:'SMB authentication — harvested credential: svc-data-tier — targeting nodes on 10.0.2.0/24'},
+      {delay:2000,tag:'RED',cls:'it-red',text:'Lateral hop confirmed: 10.0.2.14 accessed — directory enumeration in progress'},
+      {delay:3500,tag:'SIGNAL',cls:'it-warn',text:'Abnormal SMB traffic pattern — 10.0.2.x subnet — multiple auth events from single source in 90s'},
+    ],
+    options:[
+      {title:'ISOLATE FULL SUBNET 10.0.2.0/24',detail:'Cut the entire data-tier subnet from the rest of the Mirror Node. The harvested credential has access to every node on that subnet — blocking it at the individual IP level leaves gaps.',cost:'Subnet isolated. Red Team lateral movement: STOPPED.',correct:true,feedback:'Correct — and you\'ve done this before. One credential, one subnet, one isolation call. Blocking individual IPs leaves nodes you haven\'t detected yet still reachable. Subnet isolation is the right scope.'},
+      {title:'BLOCK THE SOURCE IP ONLY',detail:'Block the IP that the lateral movement is originating from. Fast and specific.',cost:'Source IP blocked. Red Team pivots to second entry point.',correct:false,feedback:'Blocking the source IP stops the current hop but the Red Team simply switches entry point. They have valid credentials for the whole subnet — a single IP block doesn\'t revoke that access. You need to isolate the target, not just the source.'},
+      {title:'RESET THE HARVESTED CREDENTIAL',detail:'Immediately reset the password for svc-data-tier to invalidate the stolen credential.',cost:'Credential reset. Red Team attempts cached token replay — partial success.',correct:false,feedback:'Resetting the credential is part of the right answer, but alone it\'s not enough — the Red Team may have a cached session token that still works for a short window. Credential reset plus subnet isolation together is the complete solution. Reset alone leaves the door ajar.'},
+    ]
+  },
+  {
+    id:'phase4', pip:4,
+    rtActions:[
+      {delay:0,tag:'RED',cls:'it-red',text:'Data staged at 10.0.2.14:/tmp/exfil_pkg/ — 14MB compressed archive'},
+      {delay:2000,tag:'RED',cls:'it-red',text:'Outbound HTTPS transfer initiated — destination: 185.220.101.47:443 — encrypted'},
+      {delay:3500,tag:'SIGNAL',cls:'it-warn',text:'Egress spike detected — 10.0.2.14 — volume anomaly — transfer in progress'},
+    ],
+    options:[
+      {title:'BLOCK EGRESS + FREEZE NODE + PRESERVE LOGS',detail:'Kill all outbound traffic from 10.0.2.14 at the firewall immediately. Freeze the node in place — no further writes or deletes. Capture a full snapshot of the staged data directory and network session logs before anything changes.',cost:'Exfiltration: BLOCKED. Evidence: PRESERVED. Transfer: 0% complete.',correct:true,feedback:'Perfect. You stopped the transfer, preserved the staged data as evidence, and captured the session logs needed to reconstruct what the Red Team accessed. That\'s a complete block — no data left, full forensic record.'},
+      {title:'THROTTLE BANDWIDTH — SLOW THE TRANSFER',detail:'Apply rate limiting to the outbound connection to buy time and reduce how much data can leave.',cost:'Transfer slowed to 40KB/s. Estimated completion: 6 minutes.',correct:false,feedback:'Throttling buys a few minutes but the data is still leaving. In a real exfiltration, 14MB at 40KB/s still fully transfers in under 6 minutes. Slowing the attacker is not the same as stopping them — you need a hard block.'},
+      {title:'ALERT SOC AND WAIT FOR APPROVAL',detail:'Generate a high-priority alert and wait for senior analyst authorization before taking action on a production-adjacent node.',cost:'Approval pending. Transfer: 60% complete before authorization granted.',correct:false,feedback:'Waiting for approval during an active exfiltration is too slow for this situation. The authorization chain exists for destructive actions — blocking outbound traffic from a compromised node is well within automated response authority. By the time approval came through, most of the data was already out.'},
+    ]
+  }
+];
+
+let currentPhase=0;
+function initSim(){
+  buildPhaseOptions();
+  setPip(1,'active');
+  setTimeout(()=>runPhaseIntel(0),800);
+  cookie('Phase 1 is live. Red Team has a foothold — read the intel feed and choose your response.');
+}
+
+function buildPhaseOptions(){
+  simPhases.forEach((phase,pi)=>{
+    const wrap=document.getElementById(phase.id+'-options');
+    phase.options.forEach((opt,oi)=>{
+      const d=document.createElement('div');d.className='response-card';d.id=`opt-${pi}-${oi}`;
+      d.innerHTML=`<h4>${opt.title}</h4><p class="rc-detail">${opt.detail}</p><p class="rc-cost">${opt.cost}</p>`;
+      d.onclick=()=>chooseResponse(pi,oi,d,opt);
+      wrap.appendChild(d);
+    });
+  });
+}
+
+function runPhaseIntel(pi){
+  const phase=simPhases[pi];
+  phase.rtActions.forEach(a=>{
+    setTimeout(()=>{
+      intel(a.tag,a.cls,a.text);
+      lg(`> [RED TEAM] ${a.text}`,'danger');
+    },a.delay);
+  });
+}
+
+let phaseDone=[false,false,false,false];
+function chooseResponse(pi,oi,el,opt){
+  if(phaseDone[pi])return;
+  const phase=simPhases[pi];
+  document.querySelectorAll(`#${phase.id}-options .response-card`).forEach(c=>{c.onclick=null;c.style.cursor='default';});
+  const st=document.getElementById(`${phase.id}-status`);
+
+  if(opt.correct){
+    phaseDone[pi]=true;
+    el.classList.add('chosen-right');
+    st.innerHTML=`<span style="color:#00ffcc;">✓ ${opt.feedback}</span>`;
+    setPip(pi+1,'done');
+    setDS(ds+8);
+    lg(`> [BLUE TEAM] Phase ${pi+1} contained — ${opt.title}`,'success');
+    phases['p'+(pi+1)]=true;updatePB();
+    if(pi<3){
+      setPip(pi+2,'active');
+      setTimeout(()=>{
+        cookie(`Phase ${pi+1} done. Phase ${pi+2} incoming — Red Team is adapting.`);
+        runPhaseIntel(pi+1);
+      },1200);
+    } else {
+      cookie('All four phases contained. The Red Team has been neutralized. Outstanding work.');
+    }
+  } else {
+    el.classList.add('chosen-wrong');
+    st.innerHTML=`<span style="color:#ffaa00;">⚠ ${opt.feedback}</span>`;
+    setDS(ds-10);
+    setPip(pi+1,'failed');
+    lg(`> [BLUE TEAM] Wrong call — Red Team advances through Phase ${pi+1}`,'warn');
+    cookie('Red Team took ground there. Don\'t make the same call twice — try again.');
+    setTimeout(()=>{
+      el.classList.remove('chosen-wrong');
+      document.querySelectorAll(`#${phase.id}-options .response-card`).forEach((c,ci)=>{
+        c.onclick=()=>chooseResponse(pi,ci,c,phase.options[ci]);
+        c.style.cursor='pointer';
+      });
+      setPip(pi+1,'active');
+    },1400);
+  }
+}
+
+function showComplete(){
+  document.getElementById('complete-panel').classList.remove('hidden');
+  document.getElementById('complete-panel').scrollIntoView({behavior:'smooth'});
+  lg('>>> LAB 8 COMPLETE. MIRROR NODE DEFENDED. RED TEAM NEUTRALIZED. <<<','success');
+  cookie('Simulation complete. But that data in the exfil package wasn\'t test data. Someone inside the Guild is working with Asher.');
+}
+</script>
+</body>
+</html>
