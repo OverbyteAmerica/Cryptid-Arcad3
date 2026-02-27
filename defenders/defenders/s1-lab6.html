@@ -1,258 +1,498 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>DEFENDERS — Lab 6: Detection Engineering</title>
-
 <style>
-
-/* DEFENDERS STANDALONE */
-
-body {
-  background:#000;
-  color:#00ffcc;
-  font-family:'Courier New', monospace;
-  padding:20px;
-}
-
-.panel {
-  border:1px solid #00ffcc;
-  padding:18px;
-  margin:20px 0;
-  background:rgba(0,0,0,.9);
-}
-
-button {
-  background:#000;
-  border:1px solid #00ffcc;
-  color:#00ffcc;
-  padding:10px 16px;
-  cursor:pointer;
-}
-
-button:hover { background:#002; }
-
-.log {
-  border:1px solid #00ffcc;
-  background:#001;
-  height:260px;
-  overflow-y:auto;
-  padding:10px;
-  font-size:.85rem;
-}
-
-.hidden { display:none; }
-
-.boot {
-  font-size:1.2rem;
-  min-height:120px;
-}
-
-.typing::after {
-  content:"_";
-  animation:blink 1s infinite;
-}
-
-@keyframes blink { 50%{opacity:0;} }
-
-.rule {
-  border:1px solid #00ffcc;
-  padding:10px;
-  margin:10px 0;
-  cursor:pointer;
-}
-
-.rule:hover {
-  background:#002;
-}
-
-#cookie {
-  position:fixed;
-  right:20px;
-  top:20px;
-  width:240px;
-  border:1px solid #00ffcc;
-  padding:12px;
-}
-
+*,*::before,*::after{box-sizing:border-box;}
+body{background-color:#000;color:#00ffcc;font-family:'Courier New',Courier,monospace;font-size:16px;line-height:1.4;margin:0;padding:20px;overflow-x:hidden;}
+h1,h2,h3,h4{font-family:'Courier New',Courier,monospace;color:#00ffcc;margin:0 0 12px 0;}
+h1{font-size:2rem;}h2{font-size:1.6rem;}h3{font-size:1.3rem;}
+a{color:#00ffcc;text-decoration:none;}a:hover{text-decoration:underline;}
+.hidden{display:none;}.center{text-align:center;}
+.panel{border:1px solid #00ffcc;padding:18px;margin:20px 0;background-color:rgba(0,0,0,0.85);border-radius:6px;box-shadow:0 0 12px rgba(0,255,204,0.4);}
+button{background-color:#000;border:1px solid #00ffcc;color:#00ffcc;padding:10px 16px;cursor:pointer;font-family:monospace;font-size:0.95rem;border-radius:4px;transition:all 0.2s ease;display:inline-block;}
+button:hover{background-color:#002;box-shadow:0 0 8px #00ffcc;}
+button:disabled{opacity:0.4;cursor:not-allowed;}
+#cookie{position:fixed;top:20px;right:20px;width:240px;border:1px solid #00ffcc;background:#000;padding:12px;box-shadow:0 0 18px rgba(0,255,204,.5);font-size:0.9rem;z-index:9999;border-radius:8px;}
+#cookie-avatar{font-size:1.6rem;margin-bottom:6px;}
+#cookie-text{opacity:0.95;line-height:1.4;}
+#cookie::before{content:"";position:absolute;inset:0;background:linear-gradient(rgba(0,255,204,0.05),transparent);pointer-events:none;}
+.boot{font-size:1.1rem;margin-bottom:20px;white-space:pre-wrap;word-break:break-word;min-height:60px;}
+.typing-cursor::after{content:"_";animation:blink 1s step-end infinite;}
+@keyframes blink{from,to{opacity:0;}50%{opacity:1;}}
+.log{background-color:#001;border:1px solid #00ffcc;padding:12px;margin-top:20px;height:220px;overflow-y:auto;font-size:0.85rem;border-radius:4px;box-shadow:0 0 10px rgba(0,255,204,0.3);}
+.log p{margin:3px 0;}.warn{color:#ffaa00;}.danger{color:#ff4444;}.success{color:#00ffcc;}.info{color:#888;}
+#pb-outer{background:rgba(0,255,204,0.1);border:1px solid #00ffcc44;border-radius:4px;height:8px;margin:10px 0 20px;overflow:hidden;}
+#pb{height:100%;background:#00ffcc;width:0%;transition:width 0.5s ease;box-shadow:0 0 8px #00ffcc;}
+/* confidence bar */
+#conf-outer{background:rgba(0,255,204,0.1);border:1px solid #00ffcc44;border-radius:4px;height:12px;margin:6px 0 4px;overflow:hidden;}
+#conf-bar{height:100%;background:#ffaa00;width:65%;transition:width 0.5s ease;}
+#conf-bar.high{background:#00ffcc;box-shadow:0 0 6px #00ffcc;}
+#conf-bar.low{background:#ff4444;}
+/* alert feed */
+.alert-row{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border:1px solid rgba(0,255,204,0.2);border-radius:4px;margin:8px 0;font-size:0.85rem;cursor:pointer;transition:all 0.2s;}
+.alert-row:hover{background:rgba(0,255,204,0.04);}
+.alert-row.triaged-high{border-color:#ff4444;background:rgba(255,68,68,0.04);}
+.alert-row.triaged-low{border-color:#555;opacity:0.5;}
+.alert-row.triaged-correct{border-color:#00ffcc;background:rgba(0,255,204,0.04);}
+.alert-priority{font-size:0.72rem;padding:2px 7px;border-radius:3px;white-space:nowrap;margin-top:2px;}
+.p-crit{background:rgba(255,68,68,0.15);color:#ff4444;border:1px solid #ff4444;}
+.p-med{background:rgba(255,170,0,0.15);color:#ffaa00;border:1px solid #ffaa00;}
+.p-low{background:rgba(100,100,100,0.15);color:#666;border:1px solid #555;}
+/* rule builder */
+.rule-builder{background:#001;border:1px solid rgba(0,255,204,0.2);border-radius:4px;padding:14px;margin:10px 0;font-size:0.85rem;}
+.rb-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0;}
+.rb-row label{opacity:0.6;font-size:0.8rem;min-width:90px;}
+.rb-row select,.rb-row input{background:#000;border:1px solid #00ffcc33;color:#00ffcc;font-family:monospace;font-size:0.82rem;padding:6px 8px;border-radius:3px;flex:1;}
+.rb-row input{min-width:120px;}
+.built-rule{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border:1px solid rgba(0,255,204,0.25);border-radius:3px;margin:5px 0;font-size:0.8rem;}
+.built-rule.valid{border-color:#00ffcc;}
+.built-rule.invalid{border-color:#ff4444;opacity:0.6;}
+/* automation cards */
+.auto-card{border:1px solid rgba(0,255,204,0.2);border-radius:4px;padding:14px;margin:8px 0;cursor:pointer;transition:all 0.2s;font-size:0.85rem;}
+.auto-card:hover{background:rgba(0,255,204,0.03);border-color:#00ffcc55;}
+.auto-card h4{margin:0 0 6px;font-size:0.9rem;}
+.auto-card p{margin:0;opacity:0.65;font-size:0.8rem;line-height:1.5;}
+.auto-card.chosen-right{border-color:#00ffcc;background:rgba(0,255,204,0.04);}
+.auto-card.chosen-wrong{border-color:#ff4444;background:rgba(255,68,68,0.04);}
 </style>
 </head>
-
 <body>
 
-<h1>LAB 6 — Detection Engineering</h1>
+<div id="cookie"><div id="cookie-avatar">🐾</div><div id="cookie-text">COOKIE v1.3 — Lab 6 online. The alerts are screaming. Let's figure out which ones actually matter.</div></div>
 
-<div class="boot typing" id="boot"></div>
+<h1>DEFENDERS GUILD</h1>
+<p style="opacity:0.6;margin:0 0 4px;">SEASON 1 — PHASE 3: DETECTION</p>
+<h2>LAB 06 // DETECTION ENGINEERING</h2>
+<div id="pb-outer"><div id="pb"></div></div>
 
-<div class="panel hidden" id="mission">
-<h2>Mission: Build Better Detection</h2>
-<p>
-The Vault generates too many alerts. Real threats are being lost in noise.  
-You must tune detection rules and build a high-confidence alert system.
-</p>
-<button onclick="start()">Access Detection Engine</button>
-</div>
-
-<div class="panel hidden" id="alerts">
-<h3>Current Alert Feed</h3>
-<p>Identify which alerts should be prioritized.</p>
-
-<div class="rule" onclick="selectAlert(true)">
-Multiple failed logins followed by success
-</div>
-
-<div class="rule" onclick="selectAlert(false)">
-Single failed login attempt
-</div>
-
-<div class="rule" onclick="selectAlert(true)">
-Unusual login time + geographic anomaly
-</div>
-
-<div class="rule" onclick="selectAlert(false)">
-Normal scheduled backup traffic
-</div>
-
-</div>
-
-<div class="panel hidden" id="tuning">
-<h3>Tune Detection Rule</h3>
-<p>How should the system respond to credential abuse?</p>
-
-<button onclick="tune(true)">Correlate multiple signals</button>
-<button onclick="tune(false)">Trigger alert on every login</button>
-<button onclick="tune(false)">Ignore low confidence signals</button>
-
-</div>
-
-<div class="panel hidden" id="automation">
-<h3>Automation Strategy</h3>
-<p>Choose the best response workflow.</p>
-
-<button onclick="auto(true)">Alert + isolate account + notify SOC</button>
-<button onclick="auto(false)">Alert only</button>
-<button onclick="auto(false)">Block all users</button>
-
-</div>
-
-<div class="panel hidden" id="success">
-<h2>Detection System Upgraded</h2>
-<p>
-Signal clarity improved. The Vault now sees emerging threats earlier.
-</p>
-
-<button onclick="returnDashboard()">Return to Dashboard</button>
-</div>
-
-<div class="log" id="log"></div>
+<div class="panel"><div class="boot typing-cursor" id="boot-text"></div></div>
 
 <div class="panel">
-<h3>Detection Confidence</h3>
-<p id="score">65%</p>
+  <h3>📋 MISSION BRIEF</h3>
+  <p><strong>Skill Focus:</strong> Alert triage · Detection rule building · Signal vs. noise · Automated response design</p>
+  <p><strong>Role Alignment:</strong> SOC Tier 2 / Detection Engineer</p>
+  <p><strong>Story Context:</strong> The forensic report from Lab 5 went to the Guild — but Asher adapted. His next wave isn't brute force; it's subtle. He's probing with low-and-slow credential attacks designed to blend into normal traffic. The Vault's detection engine is generating 400+ alerts a day, and analysts are burning out triaging noise. Your job is to fix the detection layer: triage the current alert feed, write smarter rules, and build an automated response workflow that catches Asher's pattern without crying wolf on every login attempt.</p>
+  <p><strong>Objectives:</strong> Triage the live alert feed · Build a correlated detection rule · Validate rule logic against test events · Design an automated response workflow</p>
 </div>
 
-<div id="cookie">🐕 Cookie: Detection systems online.</div>
+<!-- DETECTION CONFIDENCE -->
+<div class="panel">
+  <h3>DETECTION CONFIDENCE</h3>
+  <p style="opacity:0.7;font-size:0.85rem;">This measures how well the detection engine distinguishes real threats from normal activity. Too low and real attacks get missed. Too high too fast usually means over-triggering — every login becomes an incident. Target: above 85%.</p>
+  <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+    <div style="flex:1;">
+      <div style="display:flex;justify-content:space-between;font-size:0.8rem;opacity:0.6;margin-bottom:4px;"><span>DETECTION CONFIDENCE</span><span id="conf-pct">65%</span></div>
+      <div id="conf-outer"><div id="conf-bar"></div></div>
+    </div>
+    <span id="conf-label" style="color:#ffaa00;font-size:0.85rem;">⚠ NOISY — Too many false positives</span>
+  </div>
+</div>
+
+<!-- PHASE 1 — ALERT TRIAGE -->
+<div class="panel">
+  <h3>PHASE 1 — ALERT TRIAGE</h3>
+  <p style="opacity:0.7;font-size:0.85rem;">The detection engine produced 8 alerts in the last hour. Most are noise — routine activity that shouldn't be waking anyone up. Your job is to triage each one: mark it HIGH PRIORITY (something an analyst needs to look at now) or SUPPRESS (safe to filter out). Bad calls in either direction hurt confidence.</p>
+  <p style="opacity:0.6;font-size:0.82rem;margin-top:6px;border-left:2px solid #00ffcc44;padding-left:10px;">
+    <strong style="color:#00ffcc;opacity:0.8;">HINT:</strong> High-priority alerts share a pattern — they combine multiple weak signals into something suspicious. A single failed login means nothing. Five failed logins from the same IP at 2am followed by a success is a different story. Context, timing, and combinations matter more than any single event.
+  </p>
+  <div id="alert-feed" style="margin-top:14px;"></div>
+  <p id="triage-status" style="margin-top:10px;font-size:0.85rem;color:#888;"></p>
+</div>
+
+<!-- PHASE 2 — RULE BUILDER -->
+<div class="panel">
+  <h3>PHASE 2 — DETECTION RULE BUILDER</h3>
+  <p style="opacity:0.7;font-size:0.85rem;">Single-event alerts are why the feed is flooded. You need to build a <em>correlated</em> rule — one that only fires when multiple conditions are true at the same time. This is how real detection engineers cut false positives: instead of alerting on every failed login, you alert when failed logins + unusual timing + geographic anomaly all appear together within a short window.</p>
+  <p style="opacity:0.6;font-size:0.82rem;margin-top:6px;border-left:2px solid #00ffcc44;padding-left:10px;">
+    <strong style="color:#00ffcc;opacity:0.8;">HINT:</strong> A strong rule needs at least three correlated conditions. Each condition should be something that's unremarkable on its own but suspicious in combination. Asher's current pattern: multiple failed logins, then a success, from a source IP that's never authenticated to this vault before.
+  </p>
+  <div class="rule-builder" style="margin-top:14px;">
+    <p style="font-size:0.8rem;opacity:0.6;margin:0 0 10px;">BUILD DETECTION RULE — Add conditions then test:</p>
+    <div class="rb-row">
+      <label>EVENT TYPE</label>
+      <select id="rb-event">
+        <option value="">-- select --</option>
+        <option value="failed_login">Failed login attempt</option>
+        <option value="success_login">Successful login</option>
+        <option value="geo_anomaly">Geographic anomaly</option>
+        <option value="off_hours">Off-hours access (22:00–06:00)</option>
+        <option value="new_ip">First-seen source IP</option>
+        <option value="smb_lateral">SMB lateral movement</option>
+        <option value="registry_write">Registry write to Run key</option>
+      </select>
+    </div>
+    <div class="rb-row">
+      <label>THRESHOLD</label>
+      <input id="rb-thresh" type="text" placeholder="e.g. count > 5, within 10 min" />
+    </div>
+    <div class="rb-row">
+      <label>OPERATOR</label>
+      <select id="rb-op">
+        <option value="AND">AND (all must be true)</option>
+        <option value="FOLLOWED_BY">FOLLOWED BY (sequence)</option>
+        <option value="OR">OR (any one is enough)</option>
+      </select>
+    </div>
+    <button onclick="addCondition()" style="margin-top:4px;">+ ADD CONDITION</button>
+    <div id="rule-conditions" style="margin-top:12px;"></div>
+    <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
+      <button id="test-rule-btn" onclick="testRule()" disabled>▶ TEST RULE AGAINST EVENTS</button>
+      <button id="deploy-rule-btn" onclick="deployRule()" disabled style="border-color:#555;color:#888;">✓ DEPLOY RULE</button>
+    </div>
+  </div>
+  <div id="test-results" class="hidden" style="margin-top:14px;"></div>
+  <p id="rule-status" style="margin-top:10px;font-size:0.85rem;"></p>
+</div>
+
+<!-- PHASE 3 — RULE VALIDATION -->
+<div class="panel">
+  <h3>PHASE 3 — RULE VALIDATION</h3>
+  <p style="opacity:0.7;font-size:0.85rem;">Before a detection rule goes live it needs to be validated against known events — both real attacks and normal activity. You'll see six test events below. For each one, decide whether your deployed rule <em>should</em> trigger an alert. This tests whether your rule would catch real attacks without flooding analysts with false positives.</p>
+  <div id="validation-wrap" style="margin-top:14px;"></div>
+  <p id="val-status" style="margin-top:10px;font-size:0.85rem;color:#888;">Deploy a rule in Phase 2 to begin validation.</p>
+</div>
+
+<!-- PHASE 4 — AUTOMATED RESPONSE -->
+<div class="panel">
+  <h3>PHASE 4 — AUTOMATED RESPONSE WORKFLOW</h3>
+  <p style="opacity:0.7;font-size:0.85rem;">Detection without response is just watching. The final step is defining what happens automatically when your rule fires — before an analyst even looks at it. The goal is to slow down the attacker and preserve evidence without locking out legitimate users or causing more disruption than the attack itself.</p>
+  <p style="opacity:0.6;font-size:0.82rem;margin-top:6px;border-left:2px solid #00ffcc44;padding-left:10px;">
+    <strong style="color:#00ffcc;opacity:0.8;">HINT:</strong> Think proportional response. The most effective automated workflows do three things: limit the damage immediately, preserve evidence for investigation, and alert a human to make the final call. Automating a full lockout without human review can be exploited — an attacker who knows your rules can trigger them to knock legitimate users offline.
+  </p>
+  <div id="auto-cards" style="margin-top:14px;"></div>
+  <p id="auto-status" style="margin-top:10px;font-size:0.85rem;"></p>
+</div>
+
+<div class="log" id="log">
+  <p class="info">// LAB 6 INITIALIZED — DETECTION ENGINEERING MODULE LOADED</p>
+  <p class="info">// Alert feed: 8 events pending triage</p>
+</div>
+
+<div class="panel hidden" id="complete-panel" style="box-shadow:0 0 24px rgba(0,255,204,0.6);">
+  <h3 style="font-size:1.4rem;">✅ LAB 6 COMPLETE — DETECTION ENGINE UPGRADED</h3>
+  <p>Alert noise reduced. Correlated rule deployed. Automated response active.</p>
+  <p style="color:#888;font-size:0.85rem;">The new rule caught something during deployment testing — a probe that matched Asher's credential pattern almost perfectly, but the source IP resolved to a Guild-adjacent relay node. He's not just attacking the Vault. He's testing whether you can see him. And now he knows you can. The Darwin Key Fragment 2 you recovered in Lab 5 is still unresolved — the Guild's cryptography team says it's part of a multi-part key. Asher will be looking for the other fragments before you are.</p>
+  <p><strong>SKILLS EARNED:</strong> Alert Triage · Correlated Detection Rules · Rule Validation · Automated Response Design</p>
+  <p><strong>CAREER RELEVANCE:</strong> SOC Tier 2 · Detection Engineer · Threat Hunter</p>
+  <br>
+  <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;">
+    <a href="s1-lab7.html"><button>→ PROCEED TO LAB 7</button></a>
+    <a href="defenders-dashboard.html"><button style="border-color:#555;color:#888;">⌂ BACK TO DASHBOARD</button></a>
+  </div>
+</div>
 
 <script>
+const narrative=`> DEFENDERS GUILD — BOOTLOADER v1.0\n> Detection engine: ONLINE\n> Alert queue: 8 events — UNREVIEWED\n> False positive rate: 73% (critical)\n> Asher probe pattern: LOW-AND-SLOW credential abuse\n> Defender — fix the signal before the real attack arrives.`;
+let ci=0;const be=document.getElementById('boot-text');
+function typeIt(){if(ci<narrative.length){be.textContent+=narrative[ci++];setTimeout(typeIt,28);}else{be.classList.remove('typing-cursor');initLab();}}
+typeIt();
 
-let confidence = 65;
-let stage = 1;
-
-function log(msg){
-  document.getElementById("log").innerHTML += "> " + msg + "<br>";
+// CONFIDENCE
+let conf=65;
+function setConf(v){
+  conf=Math.max(0,Math.min(100,v));
+  document.getElementById('conf-pct').textContent=conf+'%';
+  document.getElementById('conf-bar').style.width=conf+'%';
+  const bar=document.getElementById('conf-bar'),lbl=document.getElementById('conf-label');
+  bar.classList.remove('high','low');
+  if(conf>=85){bar.classList.add('high');lbl.style.color='#00ffcc';lbl.textContent='✓ HIGH CONFIDENCE — Detection tuned';}
+  else if(conf>=60){lbl.style.color='#ffaa00';lbl.textContent='⚠ NOISY — Too many false positives';}
+  else{bar.classList.add('low');lbl.style.color='#ff4444';lbl.textContent='⚠ DEGRADED — Missing real threats';}
 }
 
-function update(val){
-  confidence += val;
-  document.getElementById("score").innerText = confidence + "%";
+const phases={p1:false,p2:false,p3:false,p4:false};
+function updatePB(){const d=Object.values(phases).filter(Boolean).length;document.getElementById('pb').style.width=(d/4*100)+'%';if(d===4)setTimeout(showComplete,600);}
+function lg(m,c=''){const l=document.getElementById('log');const p=document.createElement('p');if(c)p.className=c;p.textContent=m;l.appendChild(p);l.scrollTop=l.scrollHeight;}
+function cookie(m){document.getElementById('cookie-text').textContent=m;}
+
+// PHASE 1 — ALERT TRIAGE
+const alerts=[
+  {id:'al1',text:'5 failed logins from 203.0.113.44 within 3 min, followed by successful auth at 02:17',detail:'Source IP: 203.0.113.44 (external, not on allowlist) — matches Asher C2 address from Lab 3',priority:'CRITICAL',shouldFlag:true},
+  {id:'al2',text:'Single failed login — user@guild.net at 09:04',detail:'One mistyped password. Source IP on internal allowlist. No prior anomalies.',priority:'LOW',shouldFlag:false},
+  {id:'al3',text:'Login from new geographic location — vault-admin from IP resolving to Eastern Europe at 23:51',detail:'First time this account has authenticated from outside the Guild\'s known IP ranges.',priority:'HIGH',shouldFlag:true},
+  {id:'al4',text:'Scheduled nightly backup — vault-backup-svc at 03:00',detail:'Recurring automated job. Same source, same destination, same volume every night for 47 days.',priority:'LOW',shouldFlag:false},
+  {id:'al5',text:'3 failed logins then success — unknown_user@guild.net at 01:44',detail:'Account doesn\'t exist in the directory — authentication succeeded against a shadow credential. Possible injected account.',priority:'CRITICAL',shouldFlag:true},
+  {id:'al6',text:'Software update check — patch-agent v2.1 phoning home to vendor CDN',detail:'Known patch management service. Certificate pinned. Traffic volume and destination match vendor baseline.',priority:'LOW',shouldFlag:false},
+  {id:'al7',text:'SMB connection attempt — Node02 → Node05 using expired session token',detail:'Node02 is still in the isolated subnet from Lab 4. An expired token shouldn\'t be able to re-establish a session.',priority:'HIGH',shouldFlag:true},
+  {id:'al8',text:'DNS lookup for internal hostname — vault-db.local',detail:'Normal internal DNS resolution. Performed by dozens of services every minute.',priority:'LOW',shouldFlag:false},
+];
+let triaged={};
+function initLab(){
+  buildAlerts();
+  buildAutoCards();
+  cookie('Eight alerts waiting. Most are noise. Find the ones that actually need eyes on them.');
 }
-
-function cookie(msg){
-  document.getElementById("cookie").innerText = "🐕 Cookie: " + msg;
+function buildAlerts(){
+  const feed=document.getElementById('alert-feed');
+  alerts.forEach(a=>{
+    const d=document.createElement('div');d.className='alert-row';d.id='alrow-'+a.id;
+    const pClass=a.priority==='CRITICAL'?'p-crit':a.priority==='HIGH'?'p-med':'p-low';
+    d.innerHTML=`<div style="flex:1;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;">
+        <span class="alert-priority ${pClass}">${a.priority}</span>
+        <span>${a.text}</span>
+      </div>
+      <div style="font-size:0.75rem;opacity:0.5;">${a.detail}</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:5px;margin-left:10px;">
+      <button style="font-size:0.78rem;padding:5px 10px;border-color:#ff4444;color:#ff4444;" onclick="triageAlert('${a.id}','high',this)">🔴 HIGH</button>
+      <button style="font-size:0.78rem;padding:5px 10px;border-color:#555;color:#666;" onclick="triageAlert('${a.id}','suppress',this)">⬇ SUPPRESS</button>
+    </div>`;
+    feed.appendChild(d);
+  });
 }
-
-function typeBoot(){
-  let text = `
-DETECTION ENGINE INITIALIZED.
-
-Darwin fragment:
-"Defense is not reaction.
-It is anticipation."
-`;
-  let i = 0;
-  let el = document.getElementById("boot");
-
-  function type(){
-    if(i < text.length){
-      el.innerHTML += text[i];
-      i++;
-      setTimeout(type,20);
+let triageDone=false;
+function triageAlert(id,decision,btn){
+  if(triaged[id])return;
+  triaged[id]=decision;
+  const alert=alerts.find(a=>a.id===id);
+  const row=document.getElementById('alrow-'+id);
+  const correct=(decision==='high'&&alert.shouldFlag)||(decision==='suppress'&&!alert.shouldFlag);
+  row.querySelectorAll('button').forEach(b=>b.disabled=true);
+  if(correct){
+    row.classList.add(decision==='high'?'triaged-high':'triaged-low');
+    if(decision==='high')row.classList.add('triaged-correct');
+    setConf(conf+(decision==='high'?4:2));
+    lg(`> Alert triaged correctly: ${alert.priority} — ${decision==='high'?'escalated':'suppressed'}`,'success');
+  } else {
+    row.style.borderColor='#ff4444';row.style.opacity='0.7';
+    setConf(conf-6);
+    lg(`> Triage error — ${decision==='high'?'false positive escalated':'real threat suppressed'}`,'warn');
+  }
+  if(Object.keys(triaged).length===alerts.length&&!triageDone){
+    triageDone=true;
+    const correct=alerts.filter(a=>{
+      const d=triaged[a.id];
+      return (d==='high'&&a.shouldFlag)||(d==='suppress'&&!a.shouldFlag);
+    }).length;
+    const st=document.getElementById('triage-status');
+    if(correct>=6){
+      st.innerHTML=`<span style="color:#00ffcc;">✓ ${correct}/8 correctly triaged. Phase 1 complete.</span>`;
+      phases.p1=true;updatePB();
+      cookie('Good eye. The pattern alerts are the ones that matter — single events are background radiation.');
+      lg('> Phase 1 complete. Alert triage logged.','success');
     } else {
-      el.classList.remove("typing");
-      document.getElementById("mission").classList.remove("hidden");
+      st.innerHTML=`<span style="color:#ffaa00;">⚠ ${correct}/8 correct. Remember — single events are rarely worth escalating. It\'s the combinations that matter.</span>`;
+      setConf(conf-4);
     }
   }
-  type();
 }
 
-function start(){
-  document.getElementById("alerts").classList.remove("hidden");
-  log("Alert overload detected.");
-  cookie("Find signal in the noise.");
+// PHASE 2 — RULE BUILDER
+let conditions=[];
+let ruleDeployed=false;
+function addCondition(){
+  const ev=document.getElementById('rb-event').value;
+  const th=document.getElementById('rb-thresh').value.trim();
+  const op=document.getElementById('rb-op').value;
+  if(!ev){alert('Select an event type.');return;}
+  conditions.push({ev,th,op});
+  const wrap=document.getElementById('rule-conditions');
+  const d=document.createElement('div');d.className='built-rule';
+  const opLabel=conditions.length>1?`<span style="color:#ffaa00;margin-right:8px;font-size:0.75rem;">${op}</span>`:'';
+  d.innerHTML=`${opLabel}<span>${ev.replace(/_/g,' ').toUpperCase()}${th?' — '+th:''}</span><span style="color:#555;font-size:0.72rem;">condition ${conditions.length}</span>`;
+  wrap.appendChild(d);
+  document.getElementById('rb-event').value='';
+  document.getElementById('rb-thresh').value='';
+  if(conditions.length>=2)document.getElementById('test-rule-btn').disabled=false;
+  lg(`> Condition added: ${ev} ${th||''}`);
+}
+function testRule(){
+  document.getElementById('test-rule-btn').disabled=true;
+  lg('> Testing rule against sample event log...');
+  cookie('Let\'s see if this rule catches the right events.');
+  const hasFailedLogin=conditions.some(c=>c.ev==='failed_login');
+  const hasSuccess=conditions.some(c=>c.ev==='success_login');
+  const hasContext=conditions.some(c=>['geo_anomaly','off_hours','new_ip'].includes(c.ev));
+  const strength=conditions.length+(hasFailedLogin?1:0)+(hasSuccess?1:0)+(hasContext?1:0);
+  const testWrap=document.getElementById('test-results');
+  testWrap.classList.remove('hidden');
+  const testEvents=[
+    {desc:'5 failed logins + success at 02:17 from unknown IP',shouldFire:true},
+    {desc:'1 failed login at 09:04 from known internal IP',shouldFire:false},
+    {desc:'3 failed logins + success + new geographic location at 23:00',shouldFire:true},
+    {desc:'Scheduled backup auth at 03:00 from known service account',shouldFire:false},
+  ];
+  testWrap.innerHTML='<p style="font-size:0.78rem;opacity:0.6;margin-bottom:8px;">RULE TEST RESULTS:</p>';
+  let truePos=0,falsePos=0;
+  testEvents.forEach((te,i)=>{
+    const fires=strength>=4?te.shouldFire:(strength>=3?te.shouldFire||(Math.random()>0.7):true);
+    const correct=fires===te.shouldFire;
+    if(fires&&te.shouldFire)truePos++;
+    if(fires&&!te.shouldFire)falsePos++;
+    setTimeout(()=>{
+      const d=document.createElement('div');d.className='built-rule '+(correct?'valid':'invalid');
+      d.innerHTML=`<span>${te.desc}</span><span style="color:${fires?'#ffaa00':'#555'};font-size:0.78rem;">${fires?'🔔 FIRES':'— no alert'} ${correct?'✓':'⚠'}</span>`;
+      testWrap.appendChild(d);
+    },i*400);
+  });
+  setTimeout(()=>{
+    const quality=strength>=5?'strong':strength>=4?'adequate':'weak';
+    const feedback={
+      strong:'Rule fires on real attacks, stays quiet on normal traffic. Ready to deploy.',
+      adequate:'Rule catches most threats but may miss some edge cases. Acceptable for deployment.',
+      weak:'Rule is over-triggering. Add more correlated conditions — especially timing and IP context — to reduce false positives.'
+    };
+    const rst=document.getElementById('rule-status');
+    if(quality!=='weak'){
+      rst.innerHTML=`<span style="color:#00ffcc;">✓ Rule quality: ${quality.toUpperCase()}. ${feedback[quality]}</span>`;
+      document.getElementById('deploy-rule-btn').disabled=false;
+      document.getElementById('deploy-rule-btn').style.borderColor='#00ffcc';
+      document.getElementById('deploy-rule-btn').style.color='#00ffcc';
+      setConf(conf+8);
+      cookie('The rule is solid. Deploy it and then we\'ll validate against known event types.');
+    } else {
+      rst.innerHTML=`<span style="color:#ffaa00;">⚠ Rule quality: WEAK. ${feedback[quality]}</span>`;
+      document.getElementById('test-rule-btn').disabled=false;
+      setConf(conf-4);
+      cookie('Too many false positives. Add conditions for timing and source IP to tighten it up.');
+    }
+  },testEvents.length*400+200);
+}
+function deployRule(){
+  document.getElementById('deploy-rule-btn').disabled=true;
+  document.getElementById('test-rule-btn').disabled=true;
+  lg('> Detection rule deployed to engine.','success');
+  setConf(conf+5);
+  ruleDeployed=true;
+  document.getElementById('rule-status').innerHTML='<span style="color:#00ffcc;">✓ Rule deployed. Phase 2 complete.</span>';
+  phases.p2=true;updatePB();
+  buildValidation();
+  cookie('Rule is live. Now let\'s stress-test it against a wider event set before Asher does.');
+  lg('> Phase 2 complete. Detection rule active.','success');
 }
 
-function selectAlert(correct){
-  if(correct){
-    log("High-risk alert prioritized.");
-    update(5);
+// PHASE 3 — VALIDATION
+const valEvents=[
+  {desc:'Failed login × 7 from 203.0.113.44, success at 03:22, IP first-seen',note:'External C2 IP from prior labs, 7 failures then success, 3am',shouldAlert:true},
+  {desc:'User changes own password via self-service portal at 14:30',note:'Normal user activity, business hours, known IP, single event',shouldAlert:false},
+  {desc:'Login from new IP in different country — vault-admin — 00:08',note:'Admin account, never authenticated from this region, after midnight',shouldAlert:true},
+  {desc:'Failed login × 2 — developer account, 10:15am',note:'Two quick typos, same IP they always use, then success on third try',shouldAlert:false},
+  {desc:'Login success after 4 failures — unknown_svc account — 02:55',note:'Account not in active directory, shouldn\'t exist, authenticated anyway',shouldAlert:true},
+  {desc:'Backup service auth — vault-backup-svc — 03:00 — same IP as always',note:'Recurring automated job, identical pattern 47 consecutive nights',shouldAlert:false},
+];
+let valAnswers={},valDone=false;
+function buildValidation(){
+  const wrap=document.getElementById('validation-wrap');
+  wrap.innerHTML='<p style="font-size:0.78rem;opacity:0.6;margin-bottom:8px;">Should your rule trigger an alert for each event? Think about whether it matches your rule\'s conditions:</p>';
+  document.getElementById('val-status').textContent='';
+  valEvents.forEach((ve,i)=>{
+    const d=document.createElement('div');
+    d.style.cssText='border:1px solid rgba(0,255,204,0.2);border-radius:4px;padding:12px;margin:8px 0;font-size:0.85rem;';
+    d.id='val'+i;
+    d.innerHTML=`<div style="margin-bottom:6px;">${ve.desc}</div>
+    <div style="font-size:0.75rem;opacity:0.5;margin-bottom:10px;">${ve.note}</div>
+    <div style="display:flex;gap:8px;">
+      <button style="font-size:0.8rem;padding:6px 12px;" onclick="answerVal(${i},true,this)">🔔 SHOULD ALERT</button>
+      <button style="font-size:0.8rem;padding:6px 12px;border-color:#555;color:#666;" onclick="answerVal(${i},false,this)">— NO ALERT</button>
+    </div>
+    <p id="valfb${i}" style="font-size:0.8rem;margin-top:6px;"></p>`;
+    wrap.appendChild(d);
+  });
+}
+function answerVal(i,choice,btn){
+  if(valAnswers[i]!==undefined)return;
+  valAnswers[i]=choice;
+  const ve=valEvents[i];
+  const el=document.getElementById('val'+i);
+  el.querySelectorAll('button').forEach(b=>b.disabled=true);
+  const correct=choice===ve.shouldAlert;
+  el.style.borderColor=correct?'#00ffcc':'#ff4444';
+  document.getElementById('valfb'+i).innerHTML=correct
+    ?'<span style="color:#00ffcc;">✓ Correct.</span>'
+    :`<span style="color:#ffaa00;">⚠ Incorrect — ${ve.shouldAlert?'this matches the attack pattern and should fire':'this is normal activity, the rule should stay quiet'}.</span>`;
+  setConf(correct?conf+3:conf-5);
+  lg(`> Validation ${correct?'correct':'error'}: event ${i+1}`,(correct?'success':'warn'));
+  if(Object.keys(valAnswers).length===valEvents.length&&!valDone){
+    valDone=true;
+    const score=valEvents.filter((ve,i)=>valAnswers[i]===ve.shouldAlert).length;
+    setTimeout(()=>{
+      const vst=document.getElementById('val-status');
+      if(score>=5){
+        vst.innerHTML=`<span style="color:#00ffcc;">✓ ${score}/6 correct. Rule validated. Phase 3 complete.</span>`;
+        phases.p3=true;updatePB();
+        cookie('Rule is validated. It catches the real attacks and ignores the noise. That\'s the target.');
+        lg('> Phase 3 complete. Rule validation passed.','success');
+      } else {
+        vst.innerHTML=`<span style="color:#ffaa00;">⚠ ${score}/6 correct. Review your rule logic — the pattern to catch is: multiple failures + success + unusual timing or IP.</span>`;
+        setConf(conf-5);
+        cookie('A few misses. The key is distinguishing repeated failure-then-success from ordinary typos. Review and re-examine.');
+      }
+    },400);
+  }
+}
+
+// PHASE 4 — AUTOMATED RESPONSE
+const autoOptions=[
+  {
+    title:'ALERT + SOFT LOCK + NOTIFY SOC',
+    desc:'Temporarily restrict the flagged account to read-only, generate a high-priority alert, capture a session snapshot for evidence, and page the on-call analyst. Account is not fully locked out — a human makes the final call.',
+    correct:true,
+    feedback:'Correct. This response is proportional: it limits immediate damage, preserves evidence, and keeps a human in the decision loop before a full lockout. Asher can\'t easily weaponize this against you.'
+  },
+  {
+    title:'ALERT ONLY — LOG AND NOTIFY',
+    desc:'Fire an alert and log the event. No automated action taken. Analyst decides what to do when they see it.',
+    correct:false,
+    feedback:'Too slow. By the time an analyst responds to a logged alert, a credential attack can complete lateral movement in under 3 minutes. Detection without immediate automated containment gives Asher the window he needs.'
+  },
+  {
+    title:'IMMEDIATE FULL ACCOUNT LOCKOUT',
+    desc:'Instantly lock the flagged account across all systems. No exceptions. Alert sent after the fact.',
+    correct:false,
+    feedback:'Too aggressive. Asher knows your rules now — he can deliberately trigger this against legitimate admin accounts to cause a denial-of-service. Automated lockouts without human review are a liability.'
+  },
+  {
+    title:'BLOCK SOURCE IP + ALERT',
+    desc:'Immediately blackhole the source IP at the firewall level and send an alert. Fast and decisive.',
+    correct:false,
+    feedback:'Blocking the IP is useful but incomplete — Asher uses rotating IPs and proxies. Blocking one doesn\'t stop the campaign, and you\'ve lost the session evidence you needed to trace him further.'
+  },
+];
+let autoDone=false;
+function buildAutoCards(){
+  const wrap=document.getElementById('auto-cards');
+  autoOptions.forEach((o,i)=>{
+    const d=document.createElement('div');d.className='auto-card';
+    d.innerHTML=`<h4>${o.title}</h4><p>${o.desc}</p>`;
+    d.onclick=()=>chooseAuto(i,d,o);
+    wrap.appendChild(d);
+  });
+}
+function chooseAuto(i,el,opt){
+  if(autoDone)return;
+  Array.from(document.getElementById('auto-cards').children).forEach(c=>{c.onclick=null;c.style.cursor='default';});
+  const st=document.getElementById('auto-status');
+  if(opt.correct){
+    autoDone=true;
+    el.classList.add('chosen-right');
+    st.innerHTML=`<span style="color:#00ffcc;">✓ ${opt.feedback} Phase 4 complete.</span>`;
+    phases.p4=true;updatePB();setConf(conf+8);
+    lg('> Automated response workflow deployed.','success');
+    cookie('Proportional response. Limit damage, preserve evidence, keep a human in the loop. That\'s the standard.');
   } else {
-    log("Low-value alert filtered.");
-    update(-5);
-  }
-
-  stage++;
-  if(stage > 4){
-    document.getElementById("alerts").classList.add("hidden");
-    document.getElementById("tuning").classList.remove("hidden");
-    cookie("Tune the detection logic.");
-  }
-}
-
-function tune(correct){
-  if(correct){
-    log("Correlation engine enabled.");
-    update(10);
-    cookie("Detection quality improved.");
-    document.getElementById("tuning").classList.add("hidden");
-    document.getElementById("automation").classList.remove("hidden");
-  } else {
-    log("Poor rule design.");
-    update(-10);
+    el.classList.add('chosen-wrong');
+    st.innerHTML=`<span style="color:#ffaa00;">⚠ ${opt.feedback}</span>`;
+    setConf(conf-6);
+    lg('> Response strategy rejected — review the tradeoffs','warn');
+    cookie(opt.feedback.split('.')[0]+'. Think about proportional response.');
+    setTimeout(()=>{
+      el.classList.remove('chosen-wrong');
+      Array.from(document.getElementById('auto-cards').children).forEach((c,ci)=>{
+        if(!c.classList.contains('chosen-right')){c.onclick=()=>chooseAuto(ci,c,autoOptions[ci]);c.style.cursor='pointer';}
+      });
+    },1200);
   }
 }
 
-function auto(correct){
-  if(correct){
-    log("Automated containment workflow deployed.");
-    update(10);
-    cookie("Threat response accelerated.");
-    document.getElementById("automation").classList.add("hidden");
-    document.getElementById("success").classList.remove("hidden");
-  } else {
-    log("Inefficient response strategy.");
-    update(-10);
-  }
+function showComplete(){
+  document.getElementById('complete-panel').classList.remove('hidden');
+  document.getElementById('complete-panel').scrollIntoView({behavior:'smooth'});
+  lg('>>> LAB 6 COMPLETE. DETECTION ENGINE UPGRADED. <<<','success');
+  cookie('Lab 6 done. The detection layer is sharper. Asher knows you can see him now — which means he\'ll change his approach.');
 }
-
-function returnDashboard(){
-  window.location.href = "dashboard.html";
-}
-
-typeBoot();
-
 </script>
-
 </body>
 </html>
-```
-

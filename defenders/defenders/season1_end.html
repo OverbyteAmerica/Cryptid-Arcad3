@@ -2,189 +2,248 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>DEFENDERS — Awakening</title>
+<title>DEFENDERS — Season One Complete</title>
 
 <style>
-
-body {
+body{
   background:#000;
   color:#00ffcc;
   font-family:'Courier New', monospace;
   text-align:center;
   padding:40px;
-  transition:background 2s, color 2s;
+  transition:all 2s ease;
 }
 
-.hidden { display:none; }
-
-.hero {
+.hero{
   max-width:900px;
   margin:auto;
-  font-size:1.2rem;
+  font-size:1.3rem;
   line-height:1.8;
+  min-height:300px;
 }
 
-button {
-  margin-top:30px;
-  padding:12px 20px;
-  border:1px solid #00ffcc;
-  background:#000;
-  color:#00ffcc;
-  cursor:pointer;
-}
-
-button:hover { background:#002; }
-
-.fade {
-  opacity:0;
-  transition:opacity 2s;
-}
-
-.typing::after {
+.typing::after{
   content:"_";
   animation:blink 1s infinite;
 }
 
-@keyframes blink { 50%{opacity:0;} }
+@keyframes blink{50%{opacity:0;}}
 
+/* cinematic fade */
+.fade{
+  opacity:0;
+  transition:opacity 2s ease;
+}
+
+/* glitch */
+.glitch{
+  animation:glitch 0.12s infinite;
+  color:#ff0033;
+}
+
+@keyframes glitch{
+  0%{transform:translate(2px,-2px);}
+  50%{transform:translate(-2px,2px);}
+  100%{transform:translate(0,0);}
+}
+
+/* choices */
+.choice-btn{
+  margin:20px;
+  padding:14px 30px;
+  font-size:1rem;
+  cursor:pointer;
+  background:#000;
+}
+
+.light{
+  border:1px solid #00ffcc;
+  color:#00ffcc;
+}
+
+.dark{
+  border:1px solid #ff0033;
+  color:#ff0033;
+}
+
+.choice-btn:hover{
+  background:#001f1f;
+}
 </style>
 </head>
-
 <body>
 
-<!-- HERO SCREEN -->
-<div id="hero" class="hero typing"></div>
-
-<button id="continueBtn" class="hidden" onclick="activateOS()">Activate Guild OS</button>
-
-
-<!-- OS BOOT -->
-<div id="os" class="hidden hero fade"></div>
-
-<button id="nextBtn" class="hidden" onclick="blackout()">Continue</button>
-
-
-<!-- BLACKOUT -->
-<div id="blackout" class="hidden hero fade"></div>
+<div id="screen" class="hero"></div>
 
 <script>
 
+/* --- STORY TEXT --- */
+
 let heroText = `
+Congratulations, Defender.
+
+The network is stable.
+
+The Blackout was contained.
+
+Because of you, the grid lives.
+
+Cities breathe again.
+Families remain connected.
+
 You are no longer a trainee.
 
 You are a Defender.
-
-The Guild was not created to teach security.
-
-It was created because the world would need you.
-
-Across networks. Across nations.
-Across systems humanity does not yet understand.
-
-The Guild is a living intelligence.
-
-And now… it is awakening.
-`;
-
-let osText = `
-GUILD OPERATING SYSTEM INITIALIZING...
-
-Nodes online.
-Vault synchronized.
-Darwin adaptive learning enabled.
-
-Global Defender network forming.
-
-You are not alone.
-
-The next era of defense has begun.
 `;
 
 let vexText = `
-...signal detected...
+...signal corruption detected...
 
-You believe you are protecting humanity.
+You celebrate preservation.
 
-But you have only prolonged its suffering.
+But preservation is not progress.
 
-Tell me, Defender...
+Humanity clings to fragile systems.
+You defend weakness.
+
+Tell me, Defender —
 
 Should humanity be saved?
 
 Or allowed to evolve?
 
-I will be waiting.
-
-— Usher Vex
+— The Blackout
 `;
 
-let i=0;
-let hero=document.getElementById("hero");
+let finalTitle = `
+DEFENDERS
 
-function typeHero(){
-  if(i < heroText.length){
-    hero.innerHTML += heroText[i];
-    i++;
-    setTimeout(typeHero, 25);
-  } else {
-    hero.classList.remove("typing");
-    document.getElementById("continueBtn").classList.remove("hidden");
+SEASON TWO
+
+FALL 2026
+`;
+
+let lightKey = "SEASON 2 ACCESS KEY: DEF-LIGHT-771-A";
+let darkKey = "SEASON 2 ACCESS KEY: DEF-DARK-990-X";
+
+let screen = document.getElementById("screen");
+
+
+/* --- TYPEWRITER --- */
+
+function typeText(text, speed, callback){
+  screen.innerHTML="";
+  screen.classList.add("typing");
+
+  let i = 0;
+
+  function type(){
+    if(i < text.length){
+      screen.innerHTML += text[i];
+      i++;
+      setTimeout(type, speed);
+    }else{
+      screen.classList.remove("typing");
+      if(callback) callback();
+    }
   }
+
+  type();
 }
 
-function activateOS(){
 
-  document.getElementById("hero").classList.add("hidden");
+/* --- SEQUENCE --- */
 
-  let os=document.getElementById("os");
-  os.classList.remove("hidden");
+function startSequence(){
+
+  /* Phase 1 — hero ending */
+  typeText(heroText, 28, ()=>{
+    setTimeout(glitchPhase, 2500);
+  });
+
+}
+
+
+/* --- GLITCH INTERRUPTION --- */
+
+function glitchPhase(){
+
+  screen.classList.add("glitch");
 
   setTimeout(()=>{
-    os.classList.remove("fade");
-    os.innerText = osText;
-    document.getElementById("nextBtn").classList.remove("hidden");
-  },200);
+    screen.classList.remove("glitch");
+
+    document.body.style.color="#ff0033";
+
+    typeText(vexText, 34, showChoices);
+
+  },1400);
 }
 
-function blackout(){
 
-  document.body.style.background="#000";
-  document.body.style.color="#ff0033";
+/* --- LIGHT vs DARK --- */
 
-  document.getElementById("os").classList.add("hidden");
-  document.getElementById("nextBtn").classList.add("hidden");
+function showChoices(){
 
-  let b=document.getElementById("blackout");
-  b.classList.remove("hidden");
+  let lightBtn = document.createElement("button");
+  lightBtn.innerText="Preserve Humanity";
+  lightBtn.className="choice-btn light";
+  lightBtn.onclick=()=>endPath("light");
 
-  setTimeout(()=>{
-    b.classList.remove("fade");
-    typeVex();
-  },200);
+  let darkBtn = document.createElement("button");
+  darkBtn.innerText="Force Evolution";
+  darkBtn.className="choice-btn dark";
+  darkBtn.onclick=()=>endPath("dark");
+
+  screen.appendChild(document.createElement("br"));
+  screen.appendChild(lightBtn);
+  screen.appendChild(darkBtn);
 }
 
-let j=0;
 
-function typeVex(){
-  let b=document.getElementById("blackout");
+/* --- FINAL PATH --- */
 
-  if(j < vexText.length){
-    b.innerHTML += vexText[j];
-    j++;
-    setTimeout(typeVex, 35);
-  } else {
+function endPath(path){
 
-    let sub=document.createElement("p");
-    sub.style.marginTop="40px";
-    sub.style.fontSize="1rem";
-    sub.innerText="Season 2: Subersecurity arrives Fall 2026";
-    b.appendChild(sub);
+  screen.innerHTML="";
+
+  document.body.style.color="#00ffcc";
+
+  if(path==="dark"){
+    document.body.style.background="#050000";
   }
+
+  typeText(finalTitle, 80, ()=>{
+    showKey(path);
+  });
+
 }
 
-typeHero();
+
+/* --- SHOW UNIQUE PLAYER KEY --- */
+
+function showKey(path){
+
+  let keyLine=document.createElement("p");
+  keyLine.style.marginTop="40px";
+  keyLine.style.fontSize="1rem";
+  keyLine.style.opacity="0.6";
+
+  if(path==="light"){
+    keyLine.innerText=lightKey;
+  }else{
+    keyLine.innerText=darkKey;
+  }
+
+  screen.appendChild(keyLine);
+
+}
+
+
+/* --- AUTO START --- */
+
+setTimeout(startSequence, 1000);
 
 </script>
-
 </body>
 </html>

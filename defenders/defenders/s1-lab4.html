@@ -1,256 +1,402 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>DEFENDERS — Lab 4: Contain the Swarm</title>
-
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DEFENDERS — Lab 4: Containment & Isolation</title>
 <style>
-
-/* ========================= 
-   DEFENDERS GUILD — GLOBAL STYLES 
-   ========================= */
-
-body { 
-  background-color: #000;
-  color: #00ffcc;
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 16px;
-  line-height: 1.4;
-  margin: 0;
-  padding: 20px;
-}
-
-h1, h2, h3 { 
-  color: #00ffcc;
-}
-
-.panel {
-  border: 1px solid #00ffcc;
-  padding: 18px;
-  margin: 20px 0;
-  background-color: rgba(0,0,0,0.85);
-  border-radius: 6px;
-  box-shadow: 0 0 12px rgba(0,255,204,0.4);
-}
-
-button {
-  background-color: #000;
-  border: 1px solid #00ffcc;
-  color: #00ffcc;
-  padding: 10px 16px;
-  cursor: pointer;
-  font-family: monospace;
-}
-
-button:hover {
-  background-color: #002;
-}
-
-.log {
-  background-color: #001;
-  border: 1px solid #00ffcc;
-  padding: 12px;
-  height: 250px;
-  overflow-y: auto;
-  font-size: 0.85rem;
-}
-
-.hidden { display: none; }
-
-.sonar {
-  width: 300px;
-  height: 300px;
-  border: 1px solid #00ffcc;
-  border-radius: 50%;
-  margin: 20px auto;
-  position: relative;
-}
-
-.bug-byte {
-  width: 8px;
-  height: 8px;
-  background: red;
-  border-radius: 50%;
-  position: absolute;
-  animation: pulse 1.2s infinite;
-}
-
-@keyframes pulse {
-  0% {opacity:1;}
-  50% {opacity:.4;}
-  100% {opacity:1;}
-}
-
-#cookie {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  width: 240px;
-  border: 1px solid #00ffcc;
-  background: #000;
-  padding: 12px;
-}
-
-.boot {
-  font-size: 1.2rem;
-  min-height: 100px;
-}
-
-.typing::after {
-  content: "_";
-  animation: blink 1s infinite;
-}
-
-@keyframes blink {
-  50% {opacity:0;}
-}
-
+*,*::before,*::after{box-sizing:border-box;}
+body{background-color:#000;color:#00ffcc;font-family:'Courier New',Courier,monospace;font-size:16px;line-height:1.4;margin:0;padding:20px;overflow-x:hidden;}
+h1,h2,h3,h4{font-family:'Courier New',Courier,monospace;color:#00ffcc;margin:0 0 12px 0;}
+h1{font-size:2rem;}h2{font-size:1.6rem;}h3{font-size:1.3rem;}
+a{color:#00ffcc;text-decoration:none;}a:hover{text-decoration:underline;}
+.hidden{display:none;}.center{text-align:center;}
+.panel{border:1px solid #00ffcc;padding:18px;margin:20px 0;background-color:rgba(0,0,0,0.85);border-radius:6px;box-shadow:0 0 12px rgba(0,255,204,0.4);}
+button{background-color:#000;border:1px solid #00ffcc;color:#00ffcc;padding:10px 16px;cursor:pointer;font-family:monospace;font-size:0.95rem;border-radius:4px;transition:all 0.2s ease;display:inline-block;}
+button:hover{background-color:#002;box-shadow:0 0 8px #00ffcc;}
+button:disabled{opacity:0.4;cursor:not-allowed;}
+#cookie{position:fixed;top:20px;right:20px;width:240px;border:1px solid #00ffcc;background:#000;padding:12px;box-shadow:0 0 18px rgba(0,255,204,.5);font-size:0.9rem;z-index:9999;border-radius:8px;}
+#cookie-avatar{font-size:1.6rem;margin-bottom:6px;}
+#cookie-text{opacity:0.95;line-height:1.4;}
+#cookie::before{content:"";position:absolute;inset:0;background:linear-gradient(rgba(0,255,204,0.05),transparent);pointer-events:none;}
+.boot{font-size:1.1rem;margin-bottom:20px;white-space:pre-wrap;word-break:break-word;min-height:60px;}
+.typing-cursor::after{content:"_";animation:blink 1s step-end infinite;}
+@keyframes blink{from,to{opacity:0;}50%{opacity:1;}}
+.log{background-color:#001;border:1px solid #00ffcc;padding:12px;margin-top:20px;height:220px;overflow-y:auto;font-size:0.85rem;border-radius:4px;box-shadow:0 0 10px rgba(0,255,204,0.3);}
+.log p{margin:3px 0;}.warn{color:#ffaa00;}.danger{color:#ff4444;}.success{color:#00ffcc;}.info{color:#888;}
+#pb-outer{background:rgba(0,255,204,0.1);border:1px solid #00ffcc44;border-radius:4px;height:8px;margin:10px 0 20px;overflow:hidden;}
+#pb{height:100%;background:#00ffcc;width:0%;transition:width 0.5s ease;box-shadow:0 0 8px #00ffcc;}
+/* integrity bar */
+#int-outer{background:rgba(255,68,68,0.1);border:1px solid #ff444444;border-radius:4px;height:14px;margin:8px 0;overflow:hidden;width:100%;}
+#int-bar{height:100%;background:#ff4444;width:60%;transition:width 0.6s ease;box-shadow:0 0 8px #ff4444;}
+#int-bar.safe{background:#00ffcc;box-shadow:0 0 8px #00ffcc;}
+/* subnet map */
+.node-map{display:flex;flex-wrap:wrap;gap:12px;margin:14px 0;}
+.net-node{padding:10px 14px;border:1px solid #00ffcc33;border-radius:4px;font-size:0.8rem;min-width:130px;text-align:center;transition:all 0.3s ease;}
+.net-node.infected{border-color:#ff4444;color:#ff4444;box-shadow:0 0 8px rgba(255,68,68,0.4);animation:pulse 1.4s infinite;}
+.net-node.isolated{border-color:#ffaa00;color:#ffaa00;box-shadow:none;animation:none;}
+.net-node.clean{border-color:#00ffcc;color:#00ffcc;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
+/* firewall rule builder */
+.rule-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:8px 0;}
+.rule-row select,.rule-row input{background:#000;border:1px solid #00ffcc44;color:#00ffcc;font-family:monospace;font-size:0.82rem;padding:6px 8px;border-radius:3px;}
+.rule-row input{width:160px;}
+.rule-entry{padding:6px 10px;border:1px solid rgba(0,255,204,0.2);border-radius:3px;font-size:0.8rem;margin:4px 0;display:flex;justify-content:space-between;}
+/* decision buttons */
+.decision-grid{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0;}
+.decision-grid button{flex:1;min-width:160px;text-align:left;padding:12px 14px;font-size:0.82rem;line-height:1.5;}
+.decision-grid button.wrong{border-color:#ff4444;color:#ff4444;}
+.decision-grid button.right{border-color:#00ffcc;}
 </style>
 </head>
-
 <body>
 
-<h1>LAB 4 — Containment & Isolation</h1>
+<div id="cookie"><div id="cookie-avatar">🐾</div><div id="cookie-text">COOKIE v1.3 — Lab 4 online. The Byte Bugs are moving. We need to box them in.</div></div>
 
-<div class="boot typing" id="boot"></div>
+<h1>DEFENDERS GUILD</h1>
+<p style="opacity:0.6;margin:0 0 4px;">SEASON 1 — PHASE 2: INCIDENT RESPONSE</p>
+<h2>LAB 04 // CONTAINMENT &amp; ISOLATION</h2>
+<div id="pb-outer"><div id="pb"></div></div>
 
-<div class="panel hidden" id="mission">
-<h2>Contain the Swarm</h2>
-<p>Byte Bugs are spreading laterally inside the Vault. You must isolate infected systems.</p>
-<button onclick="investigate()">Investigate Traffic</button>
-</div>
-
-<div class="panel hidden" id="traffic">
-<h3>Traffic Analysis</h3>
-<p>Lateral movement detected.</p>
-<button onclick="isolate()">Isolate Subnet</button>
-<button onclick="fail()">Ignore</button>
-<button onclick="fail()">Block Single IP</button>
-</div>
-
-<div class="panel hidden" id="firewall">
-<h3>External Channel</h3>
-<p>Malicious external traffic detected.</p>
-<button onclick="block()">Block IP</button>
-</div>
-
-<div class="panel hidden" id="bugs">
-<h3>Byte Bug Escape</h3>
-<button onclick="contain()">Deploy IPS</button>
-</div>
-
-<div class="panel hidden" id="sonarPanel">
-<div class="sonar">
-<div class="bug-byte" style="top:40%;left:70%"></div>
-<div class="bug-byte" style="top:55%;left:50%"></div>
-<div class="bug-byte" style="top:30%;left:35%"></div>
-</div>
-</div>
+<div class="panel"><div class="boot typing-cursor" id="boot-text"></div></div>
 
 <div class="panel">
-<h3>Vault Integrity</h3>
-<p id="integrity">60%</p>
+  <h3>📋 MISSION BRIEF</h3>
+  <p><strong>Skill Focus:</strong> Subnet isolation · Firewall rules · Lateral movement blocking · Vault integrity</p>
+  <p><strong>Role Alignment:</strong> SOC Tier 1–2 / Incident Responder</p>
+  <p><strong>Story Context:</strong> The malware triage in Lab 3 confirmed the infection — but quarantining files only stops the payload, not the spread. Asher's Byte Bugs are already moving laterally across the Vault's internal network, hopping from node to node using SMB shares and stolen session tokens. Every minute without containment costs integrity. You need to cut off their movement, block the external channel they're beaconing through, and lock down the Vault before the damage becomes permanent.</p>
+  <p><strong>Objectives:</strong> Identify lateral movement · Isolate the infected subnet · Build firewall rules to block external C2 · Restore Vault integrity to a safe threshold</p>
 </div>
 
-<div class="log" id="log"></div>
+<!-- VAULT INTEGRITY -->
+<div class="panel">
+  <h3>VAULT INTEGRITY MONITOR</h3>
+  <p style="opacity:0.7;font-size:0.85rem;">This tracks how much of the Vault's network is still clean and stable. Every minute the Byte Bugs move unchecked, it drops. Get it above 80% to declare the Vault secure.</p>
+  <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+    <div style="flex:1;">
+      <div style="display:flex;justify-content:space-between;font-size:0.8rem;opacity:0.6;margin-bottom:4px;"><span>INTEGRITY</span><span id="int-pct">60%</span></div>
+      <div id="int-outer"><div id="int-bar"></div></div>
+    </div>
+    <span id="int-label" style="color:#ffaa00;font-size:0.85rem;">⚠ DEGRADED — Byte Bugs spreading</span>
+  </div>
+</div>
 
-<div id="cookie">
-🐕 Cookie: Awaiting orders, Defender.
+<!-- PHASE 1 -->
+<div class="panel">
+  <h3>PHASE 1 — IDENTIFY LATERAL MOVEMENT</h3>
+  <p style="opacity:0.7;font-size:0.85rem;">Lateral movement is how attackers spread once they're inside — jumping from one machine to another without needing to break in again. Byte Bugs use SMB (the Windows file-sharing protocol) to hop across nodes using credentials stolen from the original infection. Your job is to scan the internal network and identify which nodes are already compromised.</p>
+  <br>
+  <button id="lm-btn" onclick="runLateralScan()">▶ SCAN FOR LATERAL MOVEMENT</button>
+  <div id="node-map" class="node-map" style="margin-top:16px;"></div>
+  <p id="lm-status" style="margin-top:10px;font-size:0.85rem;color:#888;"></p>
 </div>
-<div class="panel hidden" id="complete">
-  <h3>System Stabilized</h3>
-  <p>Orientation complete. Defender identity verified.</p>
-  <button onclick="returnDash()">Return to Dashboard</button>
+
+<!-- PHASE 2 -->
+<div class="panel">
+  <h3>PHASE 2 — ISOLATE THE INFECTED SUBNET</h3>
+  <p style="opacity:0.7;font-size:0.85rem;">You've identified which nodes are infected. Now you need to cut them off from the rest of the network. Isolation means the infected subnet can no longer talk to clean nodes — the Byte Bugs can't hop further. This is a decision with consequences: isolating too narrowly leaves paths open; isolating too broadly takes clean systems offline unnecessarily.</p>
+  <p style="opacity:0.6;font-size:0.82rem;margin-top:6px;border-left:2px solid #00ffcc44;padding-left:10px;">
+    <strong style="color:#00ffcc;opacity:0.8;">HINT:</strong> The infected nodes share a subnet — they all start with the same IP prefix. Isolating by subnet cuts all of them at once. Blocking individual IPs is slower and misses any you haven't detected yet.
+  </p>
+  <p style="font-size:0.85rem;margin:14px 0 8px;opacity:0.8;">Choose your containment strategy:</p>
+  <div class="decision-grid" id="isolate-grid">
+    <button class="right" onclick="chooseIsolation('subnet', this)">🔒 ISOLATE FULL SUBNET<br><span style="font-size:0.75rem;opacity:0.6;font-style:italic;">Cut off 10.0.1.0/24 entirely from clean network segments</span></button>
+    <button class="wrong" onclick="chooseIsolation('single', this)">🔒 BLOCK SINGLE IPs<br><span style="font-size:0.75rem;opacity:0.6;font-style:italic;">Block only the three known infected nodes one at a time</span></button>
+    <button class="wrong" onclick="chooseIsolation('monitor', this)">👁 MONITOR &amp; WAIT<br><span style="font-size:0.75rem;opacity:0.6;font-style:italic;">Keep watching for more data before taking action</span></button>
+  </div>
+  <p id="isolate-status" style="margin-top:10px;font-size:0.85rem;"></p>
 </div>
+
+<!-- PHASE 3 -->
+<div class="panel">
+  <h3>PHASE 3 — FIREWALL RULE BUILDER</h3>
+  <p style="opacity:0.7;font-size:0.85rem;">Isolating the subnet stops the Byte Bugs from spreading internally — but they're still beaconing out to Asher's C2 server at <strong>203.0.113.44</strong>. A firewall rule blocks specific traffic at the network level. You need to write rules that cut the external connection without blocking legitimate outbound traffic from the rest of the Vault.</p>
+  <p style="opacity:0.6;font-size:0.82rem;margin-top:6px;border-left:2px solid #00ffcc44;padding-left:10px;">
+    <strong style="color:#00ffcc;opacity:0.8;">HINT:</strong> A good firewall rule has three parts: direction (inbound or outbound), what to match (an IP, a port, or both), and what to do (block or allow). Start with the most specific rule you can — block the exact C2 IP on the exact port it's using (443). Then add a broader rule to catch any other outbound traffic from the infected subnet.
+  </p>
+  <div style="margin:14px 0;">
+    <p style="font-size:0.8rem;opacity:0.6;margin-bottom:8px;">BUILD RULES — Add each rule then apply all at once:</p>
+    <div class="rule-row">
+      <select id="r-dir"><option value="OUT">OUTBOUND</option><option value="IN">INBOUND</option></select>
+      <select id="r-action"><option value="BLOCK">BLOCK</option><option value="ALLOW">ALLOW</option></select>
+      <input id="r-ip" type="text" placeholder="IP or subnet e.g. 203.0.113.44" />
+      <select id="r-port"><option value="443">PORT 443</option><option value="80">PORT 80</option><option value="ANY">ANY PORT</option><option value="445">PORT 445 (SMB)</option></select>
+      <button onclick="addRule()">+ ADD RULE</button>
+    </div>
+    <div id="rule-list" style="margin-top:10px;"></div>
+    <br>
+    <button id="apply-btn" onclick="applyRules()" disabled>▶ APPLY FIREWALL RULES</button>
+  </div>
+  <p id="fw-status" style="margin-top:10px;font-size:0.85rem;"></p>
+</div>
+
+<!-- PHASE 4 -->
+<div class="panel">
+  <h3>PHASE 4 — VAULT RESTORATION</h3>
+  <p style="opacity:0.7;font-size:0.85rem;">The Byte Bugs are contained and the external channel is cut. But the Vault's integrity is still below safe levels from the damage already done. The final step is active restoration: flush any remaining malicious processes, re-authenticate clean nodes back onto the network, and verify the Vault is stable before standing down.</p>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin:14px 0;">
+    <button id="flush-btn" onclick="flushProcesses()" disabled>⚡ FLUSH MALICIOUS PROCESSES</button>
+    <button id="reauth-btn" onclick="reauthNodes()" disabled>🔑 RE-AUTHENTICATE CLEAN NODES</button>
+    <button id="verify-btn" onclick="verifyVault()" disabled>✅ VERIFY VAULT STABILITY</button>
+  </div>
+  <p id="restore-status" style="margin-top:10px;font-size:0.85rem;color:#888;"></p>
+</div>
+
+<div class="log" id="log">
+  <p class="info">// LAB 4 INITIALIZED — CONTAINMENT MODULE LOADED</p>
+  <p class="info">// Vault integrity: 60% — Byte Bug spread: ACTIVE</p>
+</div>
+
+<div class="panel hidden" id="complete-panel" style="box-shadow:0 0 24px rgba(0,255,204,0.6);">
+  <h3 style="font-size:1.4rem;">✅ LAB 4 COMPLETE — VAULT SECURED</h3>
+  <p>Lateral movement stopped. External C2 channel severed. Vault integrity restored.</p>
+  <p style="color:#888;font-size:0.85rem;">Deep in the restored node logs, a directory that shouldn't exist: <code>/var/lib/.darwin_cache/</code>. Inside — encrypted fragments, timestamps, and a single unencrypted line: <em>"If they find this, the Vault was worth protecting."</em> Darwin was here. He built something inside the network before Asher took him out. And Asher knows it too.</p>
+  <p><strong>SKILLS EARNED:</strong> Lateral Movement Detection · Subnet Isolation · Firewall Rule Writing · Incident Restoration</p>
+  <p><strong>CAREER RELEVANCE:</strong> SOC Tier 1–2 · Network Security Engineer · Incident Responder</p>
+  <br>
+  <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;">
+    <a href="s1-lab5.html"><button>→ PROCEED TO LAB 5</button></a>
+    <a href="defenders-dashboard.html"><button style="border-color:#555;color:#888;">⌂ BACK TO DASHBOARD</button></a>
+  </div>
+</div>
+
 <script>
+const narrative=`> DEFENDERS GUILD — BOOTLOADER v1.0\n> Vault status: COMPROMISED\n> Lateral movement detected across 3 nodes\n> Byte Bug spread rate: +1 node / 4 minutes\n> External beacon: ACTIVE → 203.0.113.44\n> Defender — contain the swarm before the Vault is lost.`;
+let ci=0;const be=document.getElementById('boot-text');
+function typeIt(){if(ci<narrative.length){be.textContent+=narrative[ci++];setTimeout(typeIt,28);}else{be.classList.remove('typing-cursor');startIntegrityDrain();}}
+typeIt();
 
-let integrity = 60;
+// INTEGRITY
+let integrity=60;
+function setIntegrity(v){
+  integrity=Math.max(0,Math.min(100,v));
+  document.getElementById('int-pct').textContent=integrity+'%';
+  document.getElementById('int-bar').style.width=integrity+'%';
+  const bar=document.getElementById('int-bar');
+  const lbl=document.getElementById('int-label');
+  if(integrity>=80){bar.classList.add('safe');lbl.style.color='#00ffcc';lbl.textContent='✓ STABLE — Vault secure';}
+  else if(integrity>=50){bar.classList.remove('safe');lbl.style.color='#ffaa00';lbl.textContent='⚠ DEGRADED — Byte Bugs spreading';}
+  else{bar.classList.remove('safe');lbl.style.color='#ff4444';lbl.textContent='⚠ CRITICAL — Vault failing';}
+}
+let drainInterval=null;
+function startIntegrityDrain(){
+  setIntegrity(60);
+  drainInterval=setInterval(()=>{
+    if(!phases.p2){setIntegrity(integrity-1);lg('> Byte Bug spread continues — integrity degrading','warn');}
+  },8000);
+}
+function stopDrain(){clearInterval(drainInterval);}
 
-function log(msg){
-  document.getElementById("log").innerHTML += "> " + msg + "<br>";
+const phases={p1:false,p2:false,p3:false,p4:false};
+function updatePB(){const d=Object.values(phases).filter(Boolean).length;document.getElementById('pb').style.width=(d/4*100)+'%';if(d===4)setTimeout(showComplete,600);}
+function lg(m,c=''){const l=document.getElementById('log');const p=document.createElement('p');if(c)p.className=c;p.textContent=m;l.appendChild(p);l.scrollTop=l.scrollHeight;}
+function cookie(m){document.getElementById('cookie-text').textContent=m;}
+
+// PHASE 1 — LATERAL SCAN
+const nodes=[
+  {id:'n1',label:'NODE 01 — 10.0.0.12',subnet:'10.0.0',state:'clean'},
+  {id:'n2',label:'NODE 02 — 10.0.1.14',subnet:'10.0.1',state:'infected'},
+  {id:'n3',label:'NODE 03 — 10.0.1.22',subnet:'10.0.1',state:'infected'},
+  {id:'n4',label:'NODE 04 — 10.0.0.18',subnet:'10.0.0',state:'clean'},
+  {id:'n5',label:'NODE 05 — 10.0.1.31',subnet:'10.0.1',state:'infected'},
+  {id:'n6',label:'NODE 06 — 10.0.0.44',subnet:'10.0.0',state:'clean'},
+];
+let scanDone=false;
+function runLateralScan(){
+  if(scanDone)return;
+  document.getElementById('lm-btn').disabled=true;
+  lg('> Scanning internal network for lateral movement signatures...');
+  cookie('Watch the 10.0.1.x subnet — SMB traffic between those nodes looks wrong.');
+  const map=document.getElementById('node-map');
+  map.innerHTML='';
+  nodes.forEach((n,i)=>{
+    const d=document.createElement('div');
+    d.className='net-node';d.id=n.id;d.textContent=n.label;
+    map.appendChild(d);
+    setTimeout(()=>{
+      d.classList.add(n.state);
+      if(n.state==='infected'){
+        lg(`> LATERAL MOVEMENT: ${n.label} — SMB beacon detected`,'danger');
+        d.textContent=n.label+' ⚠';
+      } else {
+        d.textContent=n.label+' ✓';
+      }
+    },(i+1)*600);
+  });
+  setTimeout(()=>{
+    scanDone=true;
+    document.getElementById('lm-status').innerHTML='<span style="color:#ff4444;">⚠ 3 infected nodes identified on subnet 10.0.1.0/24. Phase 1 complete.</span>';
+    phases.p1=true;updatePB();
+    cookie('Three nodes on the 10.0.1.x subnet are compromised. That\'s your containment target — the whole subnet needs to go offline.');
+    lg('> Phase 1 complete. Infected subnet: 10.0.1.0/24','success');
+  },nodes.length*600+400);
 }
 
-function update(val){
-  integrity += val;
-  document.getElementById("integrity").innerText = integrity + "%";
-}
-
-function cookie(msg){
-  document.getElementById("cookie").innerText = "🐕 Cookie: " + msg;
-}
-
-function typeBoot(){
-  let text = `
-ANOMALY DETECTED.
-Lateral movement attempt.
-
-Darwin fragment:
-"Containment gives you control."
-`;
-  let i = 0;
-  let el = document.getElementById("boot");
-
-  function type(){
-    if(i < text.length){
-      el.innerHTML += text[i];
-      i++;
-      setTimeout(type, 20);
-    } else {
-      el.classList.remove("typing");
-      document.getElementById("mission").classList.remove("hidden");
-    }
+// PHASE 2 — ISOLATION DECISION
+let isolateDone=false;
+function chooseIsolation(choice, btn){
+  if(isolateDone)return;
+  const grid=document.getElementById('isolate-grid');
+  Array.from(grid.children).forEach(b=>b.disabled=true);
+  const st=document.getElementById('isolate-status');
+  if(choice==='subnet'){
+    isolateDone=true;
+    lg('> Isolating subnet 10.0.1.0/24 from clean segments...','warn');
+    cookie('Correct. Cutting the whole subnet stops any bugs you haven\'t found yet too.');
+    setTimeout(()=>{
+      nodes.filter(n=>n.subnet==='10.0.1').forEach(n=>{
+        const el=document.getElementById(n.id);
+        if(el){el.classList.remove('infected');el.classList.add('isolated');el.textContent=el.textContent.replace('⚠','🔒');}
+      });
+      lg('> Subnet 10.0.1.0/24 — ISOLATED. SMB traffic severed.','success');
+      setIntegrity(integrity+12);
+      st.innerHTML='<span style="color:#00ffcc;">✓ Subnet isolated. Lateral movement stopped. Phase 2 complete.</span>';
+      phases.p2=true;updatePB();stopDrain();
+      document.getElementById('apply-btn').disabled=false;
+      cookie('Good call. The 10.0.1.x subnet is cut off. Now deal with that external beacon.');
+    },1800);
+  } else if(choice==='single'){
+    lg('> Blocking individual IPs... gaps remain in coverage','warn');
+    st.innerHTML='<span style="color:#ffaa00;">⚠ Blocking individual IPs leaves undetected nodes open. The Byte Bugs found a gap and spread further. Integrity -8%. Try again.</span>';
+    setIntegrity(integrity-8);
+    cookie('Too narrow. If there are bugs you haven\'t detected yet, they just slipped through. Try the subnet approach.');
+    setTimeout(()=>Array.from(grid.children).forEach(b=>b.disabled=false),1000);
+  } else {
+    lg('> Monitoring only — no action taken. Spread continues.','danger');
+    st.innerHTML='<span style="color:#ff4444;">⚠ Waiting gave the Byte Bugs time to reach two more nodes. Integrity -12%. You need to act now.</span>';
+    setIntegrity(integrity-12);
+    cookie('In incident response, hesitation has a cost. Integrity just dropped. Isolate the subnet.');
+    setTimeout(()=>Array.from(grid.children).forEach(b=>b.disabled=false),1000);
   }
-  type();
 }
 
-function investigate(){
-  document.getElementById("traffic").classList.remove("hidden");
-  document.getElementById("sonarPanel").classList.remove("hidden");
-  log("SMB lateral movement detected.");
-  cookie("Segment the infected subnet.");
+// PHASE 3 — FIREWALL RULES
+let rules=[];
+const correctIPs=['203.0.113.44','10.0.1.0/24','10.0.1.0'];
+function addRule(){
+  const dir=document.getElementById('r-dir').value;
+  const action=document.getElementById('r-action').value;
+  const ip=document.getElementById('r-ip').value.trim();
+  const port=document.getElementById('r-port').value;
+  if(!ip){alert('Enter an IP or subnet.');return;}
+  rules.push({dir,action,ip,port});
+  const rl=document.getElementById('rule-list');
+  const d=document.createElement('div');d.className='rule-entry';
+  d.innerHTML=`<span>${action} ${dir} — ${ip} : ${port}</span><span style="color:#555;font-size:0.72rem;">PENDING</span>`;
+  rl.appendChild(d);
+  document.getElementById('r-ip').value='';
+  if(rules.length>=1)document.getElementById('apply-btn').disabled=false;
+  lg(`> Rule staged: ${action} ${dir} ${ip}:${port}`);
+}
+function applyRules(){
+  document.getElementById('apply-btn').disabled=true;
+  lg('> Applying firewall ruleset...');
+  cookie('Let\'s see if these rules close the right doors.');
+  const hasC2Block=rules.some(r=>r.action==='BLOCK'&&r.dir==='OUT'&&(r.ip==='203.0.113.44')&&r.port==='443');
+  const hasSubnetBlock=rules.some(r=>r.action==='BLOCK'&&correctIPs.some(ip=>r.ip.startsWith(ip.split('/')[0].split('.').slice(0,3).join('.'))));
+  setTimeout(()=>{
+    const entries=document.querySelectorAll('.rule-entry span:last-child');
+    rules.forEach((r,i)=>{
+      const isGood=(r.action==='BLOCK'&&r.dir==='OUT'&&r.ip==='203.0.113.44')||(r.action==='BLOCK'&&r.ip.includes('10.0.1'));
+      if(entries[i])entries[i].textContent=isGood?'✓ APPLIED':'⚠ INEFFECTIVE';
+      if(entries[i])entries[i].style.color=isGood?'#00ffcc':'#ff4444';
+    });
+    if(hasC2Block){
+      lg('> FIREWALL: Outbound to 203.0.113.44:443 — BLOCKED','success');
+      setIntegrity(integrity+15);
+      const fwSt=document.getElementById('fw-status');
+      if(hasSubnetBlock){
+        lg('> FIREWALL: Subnet 10.0.1.x outbound — BLOCKED','success');
+        lg('> All C2 channels severed. Phase 3 complete.','success');
+        fwSt.innerHTML='<span style="color:#00ffcc;">✓ Firewall rules applied. C2 beacon severed. Phase 3 complete.</span>';
+        phases.p3=true;updatePB();
+        document.getElementById('flush-btn').disabled=false;
+        cookie('Clean ruleset. The C2 channel is dead. Asher\'s bugs are flying blind now.');
+      } else {
+        lg('> C2 beacon blocked. Consider also blocking the full infected subnet outbound.','warn');
+        fwSt.innerHTML='<span style="color:#ffaa00;">✓ C2 beacon blocked — good. Consider adding a rule for the full 10.0.1.x subnet too. Phase 3 complete.</span>';
+        phases.p3=true;updatePB();
+        document.getElementById('flush-btn').disabled=false;
+        cookie('C2 is blocked — that\'s the main one. A rule for the whole infected subnet would be cleaner, but you\'re good to move on.');
+      }
+    } else {
+      lg('> C2 channel to 203.0.113.44 still open — beacon continues','danger');
+      document.getElementById('fw-status').innerHTML='<span style="color:#ff4444;">⚠ The C2 beacon is still live. Make sure you\'re blocking OUTBOUND traffic to 203.0.113.44 on port 443.</span>';
+      setIntegrity(integrity-5);
+      document.getElementById('apply-btn').disabled=false;
+      cookie('The beacon is still going. Block outbound traffic to 203.0.113.44 on port 443 — that\'s the C2 channel.');
+    }
+  },1600);
 }
 
-function isolate(){
-  log("Subnet isolated.");
-  update(10);
-  cookie("Containment successful.");
-  document.getElementById("traffic").classList.add("hidden");
-  document.getElementById("firewall").classList.remove("hidden");
+// PHASE 4 — RESTORATION
+let flushed=false,reathed=false,verified=false;
+function flushProcesses(){
+  document.getElementById('flush-btn').disabled=true;
+  lg('> Flushing malicious processes from isolated nodes...');
+  cookie('Terminating every process that matched the Byte Bug signature.');
+  setTimeout(()=>{lg('> svchost_update.exe (PID 1042) — TERMINATED','success');},600);
+  setTimeout(()=>{lg('> byte_agent.bin (PID 3301) — TERMINATED','success');},1100);
+  setTimeout(()=>{lg('> network_init.ps1 (PID 9900) — TERMINATED','success');},1600);
+  setTimeout(()=>{
+    lg('> All malicious processes flushed.','success');
+    setIntegrity(integrity+8);
+    flushed=true;
+    document.getElementById('reauth-btn').disabled=false;
+    document.getElementById('restore-status').innerHTML='<span style="color:#ffaa00;">Processes flushed. Re-authenticate clean nodes to restore network access.</span>';
+    cookie('Processes terminated. The bugs have no running foothold now. Bring the clean nodes back.');
+  },2100);
+}
+function reauthNodes(){
+  document.getElementById('reauth-btn').disabled=true;
+  lg('> Re-authenticating clean nodes to network...');
+  cookie('Re-issuing credentials to the nodes that were never compromised.');
+  setTimeout(()=>{lg('> NODE 01 — 10.0.0.12 re-authenticated ✓','success');},500);
+  setTimeout(()=>{lg('> NODE 04 — 10.0.0.18 re-authenticated ✓','success');},1000);
+  setTimeout(()=>{lg('> NODE 06 — 10.0.0.44 re-authenticated ✓','success');},1500);
+  setTimeout(()=>{
+    nodes.filter(n=>n.state==='clean').forEach(n=>{
+      const el=document.getElementById(n.id);if(el){el.classList.add('clean');el.textContent=el.textContent+' 🔑';}
+    });
+    lg('> Clean node access restored. Infected subnet remains isolated.','success');
+    setIntegrity(integrity+6);
+    reathed=true;
+    document.getElementById('verify-btn').disabled=false;
+    document.getElementById('restore-status').innerHTML='<span style="color:#ffaa00;">Clean nodes back online. Run final verification to confirm Vault stability.</span>';
+    cookie('Three clean nodes are back. Run the final verification and let\'s see where the Vault stands.');
+  },2000);
+}
+function verifyVault(){
+  document.getElementById('verify-btn').disabled=true;
+  lg('> Running Vault stability verification...');
+  cookie('Final check. If integrity is above 80% we can stand down.');
+  setTimeout(()=>{lg('> Checking for residual Byte Bug signatures...'),600});
+  setTimeout(()=>{lg('> Checking external channel status...'),1100});
+  setTimeout(()=>{lg('> Auditing node authentication tokens...'),1600});
+  setTimeout(()=>{
+    setIntegrity(integrity+4);
+    if(integrity>=80){
+      lg('> Vault integrity: '+integrity+'% — STABLE','success');
+      lg('> All Byte Bug processes terminated.','success');
+      lg('> C2 channel: SEVERED','success');
+      lg('> Phase 4 complete. Vault secured.','success');
+      document.getElementById('restore-status').innerHTML=`<span style="color:#00ffcc;">✓ Vault integrity at ${integrity}%. All systems nominal. Phase 4 complete.</span>`;
+      phases.p4=true;updatePB();
+      cookie('Vault integrity is above 80%. We\'re stable. Well done, Defender.');
+    } else {
+      lg('> Vault integrity: '+integrity+'% — below safe threshold','warn');
+      document.getElementById('restore-status').innerHTML=`<span style="color:#ffaa00;">⚠ Integrity at ${integrity}% — below 80% threshold. Check that all phases are complete and re-verify.</span>`;
+      document.getElementById('verify-btn').disabled=false;
+      cookie('Not quite there yet. Make sure the subnet is isolated and the firewall rules are applied, then verify again.');
+    }
+  },2200);
 }
 
-function block(){
-  log("External IP blocked.");
-  update(15);
-  cookie("Channel closed.");
-  document.getElementById("firewall").classList.add("hidden");
-  document.getElementById("bugs").classList.remove("hidden");
-}
-
-function contain(){
-  log("Byte Bugs isolated.");
-  update(10);
-  cookie("Vault stabilized.");
-}
-
-function fail(){
-  log("Infection spreading.");
-  update(-10);
-  cookie("That increased risk.");
-}
-
-typeBoot();
-function returnDash() {
-  // Mark lab complete
-  let progress = JSON.parse(localStorage.getItem("defenderProgress")) || {};
-  progress[currentLab] = true;
-  localStorage.setItem("defenderProgress", JSON.stringify(progress));
-
-  // Return to dashboard
-  window.location.href = "../defenders-dashboard.html";
+function showComplete(){
+  document.getElementById('complete-panel').classList.remove('hidden');
+  document.getElementById('complete-panel').scrollIntoView({behavior:'smooth'});
+  lg('>>> LAB 4 COMPLETE. VAULT SECURED. BYTE BUG SPREAD CONTAINED. <<<','success');
+  cookie('Lab 4 done. The Vault is stable. But that Darwin cache... Asher is going to come looking for it. Stay sharp.');
 }
 </script>
-
 </body>
 </html>
-```
-
