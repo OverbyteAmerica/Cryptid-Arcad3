@@ -2,28 +2,36 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CRYPTID ARCADE - GAMES</title>
   <link href="https://fonts.googleapis.com/css2?family=Major+Mono+Display&display=swap" rel="stylesheet">
   <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
     body {
       margin: 0;
-      height: 100vh;
+      min-height: 100vh;
+      min-height: 100dvh;
       font-family: 'Major Mono Display', monospace;
       background-color: black;
       color: white;
       text-align: center;
       overflow-x: hidden;
-      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-bottom: 40px;
     }
 
     canvas { position: fixed; top:0; left:0; z-index:-1; }
 
     h1 {
-      font-size: 90px;
+      font-size: clamp(44px, 12vw, 90px);
       color: cyan;
       text-shadow: 0 0 5px cyan, 0 0 15px cyan, 0 0 30px cyan;
       animation: glowFlicker 1s infinite;
-      margin-top: 60px;
+      margin-top: clamp(30px, 6vh, 60px);
+      margin-bottom: 10px;
     }
 
     @keyframes glowFlicker {
@@ -32,66 +40,69 @@
     }
 
     #subhead {
-      font-size:28px;
+      font-size: clamp(14px, 4vw, 28px);
       color:#0ff;
       text-shadow:0 0 10px #0ff, 0 0 20px #0ff;
-      margin-bottom:40px;
+      margin-bottom: clamp(40px, 8vh, 80px);
+      padding: 0 16px;
     }
 
     .button-container {
       display: flex;
       justify-content: center;
-      gap: 40px;
+      gap: 24px;
       flex-wrap: wrap;
-      padding: 20px;
+      padding: 0 16px;
+      width: 100%;
+      max-width: 900px;
     }
 
-    /* GAME CARD STYLE */
     .game-card {
-      width: 400px;
+      width: clamp(280px, 90vw, 400px);
       padding: 25px;
       border: 3px solid white;
       background: black;
       cursor: pointer;
       transition: all 0.3s ease;
+      text-align: left;
     }
 
-    .game-card:hover {
+    .game-card:hover, .game-card:active {
       background: white;
       color: black;
       box-shadow: 0 0 20px cyan, 0 0 40px cyan;
-      transform: scale(1.05);
+      transform: scale(1.03);
     }
 
     .game-title {
-      font-size: 26px;
+      font-size: clamp(18px, 5vw, 26px);
       margin-bottom: 15px;
       font-family: 'Major Mono Display', monospace;
     }
 
     .game-description {
-      font-family: Arial, Helvetica, sans-serif; /* simpler font */
-      font-size: 15px;
-      line-height: 1.5;
+      font-family: "Courier New", monospace;
+      font-size: clamp(13px, 3.5vw, 15px);
+      line-height: 1.6;
     }
 
     .back-button {
-      font-size:22px;
-      padding:18px 40px;
-      margin:15px;
-      cursor:pointer;
-      background:black;
-      color:white;
-      border:3px solid white;
-      font-family:'Major Mono Display', monospace;
+      font-size: clamp(14px, 4vw, 22px);
+      padding: 14px 36px;
+      margin-top: 30px;
+      cursor: pointer;
+      background: black;
+      color: white;
+      border: 3px solid white;
+      font-family: 'Major Mono Display', monospace;
+      touch-action: manipulation;
     }
 
-    .back-button:hover {
-      color:black;
-      background:white;
-      box-shadow:0 0 20px cyan,0 0 40px cyan;
+    .back-button:hover, .back-button:active {
+      color: black;
+      background: white;
+      box-shadow: 0 0 20px cyan, 0 0 40px cyan;
     }
-
   </style>
 </head>
 <body>
@@ -115,12 +126,21 @@
       </div>
     </div>
 
+    <!-- BIGFOOT.EXE GAME CARD -->
+    <div class="game-card" onclick="location.href='games/bigfoot-hunt.html'">
+      <div class="game-title">BIGFOOT.EXE</div>
+      <div class="game-description">
+        You are Bigfoot — a cyber cryptid moving across hidden networks, hunted by security forces trying to contain you.
+        <br><br>
+        Use stealth, scanning beams, and strategy to survive the hunt and uncover secrets buried deep in the system.
+      </div>
+    </div>
+
   </div>
 
   <button class="back-button" onclick="location.href='index.html'">Back to Arcade</button>
 
   <script>
-    // Pixel starfield
     const canvas = document.getElementById('stars');
     const ctx = canvas.getContext('2d');
     let stars = [];
@@ -148,7 +168,11 @@
       requestAnimationFrame(animateStars);
     }
 
-    window.addEventListener('resize', initStars);
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(initStars, 100);
+    });
     initStars();
     animateStars();
   </script>

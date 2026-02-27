@@ -2,20 +2,29 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CRYPTID ARCADE</title>
 
   <!-- Google Font -->
   <link href="https://fonts.googleapis.com/css2?family=Major+Mono+Display&display=swap" rel="stylesheet">
 
   <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
-      height: 100vh;
+      min-height: 100vh;
+      min-height: 100dvh;
       background: black;
       color: white;
       text-align: center;
       font-family: "Courier New", monospace;
-      overflow: hidden;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
     }
 
     canvas {
@@ -27,8 +36,11 @@
 
     h1 {
       font-family: 'Major Mono Display', monospace;
-      font-size: 100px;
-      margin-top: 60px;
+      font-size: clamp(36px, 10vw, 100px);
+      margin-top: clamp(30px, 8vh, 60px);
+      margin-bottom: 0;
+      padding: 0 10px;
+      line-height: 1.1;
       text-shadow:
         0 0 5px white,
         0 0 15px white,
@@ -75,24 +87,37 @@
 
     #subhead {
       color: #0ff;
-      font-size: 28px;
-      margin-top: -20px;
-      margin-bottom: 40px;
+      font-size: clamp(14px, 4vw, 28px);
+      margin-top: -10px;
+      margin-bottom: clamp(20px, 4vh, 40px);
       text-shadow: 0 0 10px #0ff;
+      padding: 0 10px;
+    }
+
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      padding: 0 16px;
+      width: 100%;
+      max-width: 320px;
+      margin-top: clamp(30px, 8vh, 80px);
     }
 
     button {
       font-family: 'Major Mono Display', monospace;
-      font-size: 22px;
-      padding: 18px 40px;
-      margin: 15px;
+      font-size: clamp(13px, 3.5vw, 17px);
+      padding: 10px 30px;
       background: black;
       color: white;
       border: 3px solid white;
       cursor: pointer;
+      width: 100%;
+      touch-action: manipulation;
     }
 
-    button:hover {
+    button:hover, button:active {
       background: white;
       color: black;
       box-shadow: 0 0 25px cyan;
@@ -106,10 +131,10 @@
     /* MARQUEE */
     .marquee {
       position: fixed;
-      bottom: 120px;
+      bottom: clamp(70px, 14vh, 120px);
       width: 100%;
       color: #0f0;
-      font-size: 20px;
+      font-size: clamp(12px, 3vw, 20px);
       text-shadow: 0 0 5px #0f0;
       white-space: nowrap;
       overflow: hidden;
@@ -129,13 +154,14 @@
     /* RIDDLE TERMINAL */
     #riddle-box {
       position: fixed;
-      bottom: 30px;
+      bottom: 16px;
       width: 100%;
       text-align: center;
+      padding: 0 16px;
     }
 
     #riddle {
-      font-size: 16px;
+      font-size: clamp(12px, 3vw, 16px);
       margin-bottom: 8px;
       color: #0ff;
     }
@@ -145,14 +171,24 @@
       border: 2px solid cyan;
       color: cyan;
       padding: 8px;
-      width: 260px;
+      width: min(260px, 80vw);
       font-family: "Courier New", monospace;
+      font-size: clamp(13px, 3.5vw, 16px);
       text-align: center;
+      -webkit-appearance: none;
+      border-radius: 0;
     }
 
     input:focus {
       outline: none;
       box-shadow: 0 0 15px cyan;
+    }
+
+    /* Prevent iOS zoom on input focus */
+    @media (max-width: 480px) {
+      input {
+        font-size: 16px;
+      }
     }
   </style>
 </head>
@@ -164,12 +200,11 @@
     CRYPTI<span class="flashBlueD blue">D</span> ARCA<span class="blue">D</span>E
   </h1>
 
-
-  <div>
+  <div class="btn-group">
     <button onclick="location.href='games-main.html'">Games</button>
     <button onclick="location.href='case-studies-main.html'">Case Studies</button>
     <button onclick="location.href='toys.html'">Toys</button>
- </div>
+  </div>
 
   <!-- MARQUEE -->
   <div class="marquee">
@@ -178,9 +213,8 @@
 
   <!-- RIDDLE -->
   <div id="riddle-box">
-    <div id="riddle">
-    </div>
-    <input id="answer" placeholder="ENTER RIDDLE ANSWER">
+    <div id="riddle"></div>
+    <input id="answer" placeholder="ENTER RIDDLE ANSWER" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
   </div>
 
   <script>
@@ -233,7 +267,12 @@
       requestAnimationFrame(animateStars);
     }
 
-    window.addEventListener('resize', initStars);
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(initStars, 100);
+    });
+
     initStars();
     animateStars();
   </script>
