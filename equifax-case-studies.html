@@ -7,6 +7,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600&family=Inter:wght@400;600&display=swap" rel="stylesheet">
 
 <style>
+*, *::before, *::after { box-sizing: border-box; }
+
 body {
   margin: 0;
   min-height: 100vh;
@@ -14,6 +16,7 @@ body {
   color: white;
   font-family: 'Inter', sans-serif;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 canvas { position: fixed; top:0; left:0; z-index:-1; }
@@ -21,20 +24,25 @@ canvas { position: fixed; top:0; left:0; z-index:-1; }
 nav {
   display: flex;
   justify-content: space-between;
-  padding: 20px 40px;
+  align-items: center;
+  padding: clamp(12px, 3vw, 20px) clamp(16px, 4vw, 40px);
   border-bottom: 2px solid cyan;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 nav button {
   background: black;
   border: 2px solid cyan;
   color: cyan;
-  padding: 10px 22px;
+  padding: clamp(8px, 2vw, 10px) clamp(14px, 3vw, 22px);
   cursor: pointer;
   font-family: 'Orbitron', sans-serif;
+  font-size: clamp(11px, 2.5vw, 14px);
+  touch-action: manipulation;
 }
 
-nav button:hover {
+nav button:hover, nav button:active {
   background: cyan;
   color: black;
   box-shadow: 0 0 20px cyan;
@@ -42,31 +50,32 @@ nav button:hover {
 
 header {
   text-align: center;
-  margin-top: 40px;
+  margin-top: clamp(24px, 5vh, 40px);
+  padding: 0 16px;
 }
 
 header h1 {
   font-family: 'Orbitron', sans-serif;
-  font-size: 48px;
+  font-size: clamp(28px, 8vw, 48px);
   color: cyan;
   text-shadow: 0 0 20px cyan;
 }
 
 header h2 {
-  font-size: 20px;
+  font-size: clamp(14px, 3.5vw, 20px);
   color: #9ff;
 }
 
 .dashboard {
   max-width: 1200px;
-  margin: 60px auto;
-  padding: 20px;
+  margin: clamp(30px, 6vh, 60px) auto;
+  padding: clamp(12px, 4vw, 20px);
 }
 
 .panel {
   border: 2px solid cyan;
-  padding: 30px;
-  margin-bottom: 40px;
+  padding: clamp(16px, 4vw, 30px);
+  margin-bottom: clamp(20px, 4vh, 40px);
   position: relative;
   animation: fadeUp 0.8s ease forwards;
 }
@@ -88,8 +97,14 @@ header h2 {
 
 .panel h3 {
   font-family: 'Orbitron', sans-serif;
+  font-size: clamp(14px, 3.5vw, 18px);
   color: cyan;
   margin-bottom: 15px;
+}
+
+.panel p, .panel li {
+  font-size: clamp(13px, 3vw, 15px);
+  line-height: 1.7;
 }
 
 @keyframes fadeUp {
@@ -106,12 +121,19 @@ header h2 {
 
 .triad-item {
   border-left: 6px solid cyan;
-  padding: 15px 20px;
+  padding: 12px 16px;
   background: rgba(0,255,255,0.05);
+  font-size: clamp(13px, 3vw, 15px);
+  line-height: 1.6;
 }
 
-/* SVG */
-svg { width:100%; }
+/* SVG scrollable on mobile */
+.svg-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+svg { width:100%; min-width: 300px; }
 
 .node {
   fill: black;
@@ -143,17 +165,24 @@ svg { width:100%; }
 /* COLLAPSIBLES */
 details {
   border: 1px solid cyan;
-  padding: 15px;
+  padding: clamp(10px, 3vw, 15px);
   margin-bottom: 15px;
 }
 
 summary {
   cursor: pointer;
   font-family: 'Orbitron', sans-serif;
+  font-size: clamp(12px, 3vw, 14px);
   color: cyan;
+  touch-action: manipulation;
 }
 
-/* LIST */
+details p, details li {
+  font-size: clamp(13px, 3vw, 15px);
+  line-height: 1.7;
+  margin-top: 10px;
+}
+
 li { margin-bottom: 10px; }
 </style>
 </head>
@@ -193,6 +222,7 @@ allowing unrestricted lateral movement.
 <div class="panel">
 <h3>Attack Path Visualization</h3>
 
+<div class="svg-wrap">
 <svg viewBox="0 0 800 300">
   <line x1="150" y1="150" x2="350" y2="150" class="link"/>
   <line x1="350" y1="150" x2="550" y2="150" class="attack"/>
@@ -203,6 +233,7 @@ allowing unrestricted lateral movement.
   <text x="350" y="220" fill="cyan" text-anchor="middle">App Layer</text>
   <text x="550" y="220" fill="cyan" text-anchor="middle">PII DB</text>
 </svg>
+</div>
 
 </div>
 
