@@ -2,254 +2,731 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>THE SPEAKEASY</title>
-
-  <link href="https://fonts.googleapis.com/css2?family=Major+Mono+Display&display=swap" rel="stylesheet">
-
+  <link href="https://fonts.googleapis.com/css2?family=Syne+Mono&display=swap" rel="stylesheet">
   <style>
-    body {
-      margin: 0;
-      background: black;
-      color: #0f0;
-      font-family: "Courier New", monospace;
-      height: 100vh;
-      overflow: hidden;
+    :root {
+      --green: #2aff6e;
+      --amber: #ffb300;
+      --red: #ff3c3c;
+      --dim: #1a1a1a;
+      --fog: rgba(42,255,110,0.07);
     }
 
-    /* CRT Scanlines */
-    body::before {
-      content: "";
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #080a08;
+      color: var(--green);
+      font-family: 'Syne Mono', monospace;
+      min-height: 100vh;
+      overflow-x: hidden;
+      cursor: crosshair;
+    }
+
+    /* Scanlines */
+    body::after {
+      content: '';
       position: fixed;
       inset: 0;
       background: repeating-linear-gradient(
         to bottom,
-        rgba(0,0,0,0.15),
-        rgba(0,0,0,0.15) 1px,
-        transparent 1px,
-        transparent 3px
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.18) 2px,
+        rgba(0,0,0,0.18) 4px
       );
       pointer-events: none;
-      z-index: 10;
+      z-index: 100;
     }
 
-    /* Scrollable terminal */
-    .terminal {
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 30px;
-      height: 100vh;
-      overflow-y: auto;
-      animation: flicker 7s infinite;
-      box-sizing: border-box;
+    /* Ambient noise grain */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: -50%;
+      width: 200%;
+      height: 200%;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      opacity: 0.4;
+      pointer-events: none;
+      z-index: 99;
+      animation: grainShift 0.8s steps(1) infinite;
     }
 
-    /* Hide scrollbar but allow scroll */
-    .terminal::-webkit-scrollbar {
-      width: 0;
+    @keyframes grainShift {
+      0%   { transform: translate(0, 0); }
+      25%  { transform: translate(-3%, 2%); }
+      50%  { transform: translate(2%, -1%); }
+      75%  { transform: translate(-1%, 3%); }
+      100% { transform: translate(0, 0); }
     }
 
-    @keyframes flicker {
-      0%, 100% { opacity: 1; }
-      97% { opacity: 0.85; }
-      98% { opacity: 0.4; }
-      99% { opacity: 0.9; }
+    /* ── ENTRANCE ── */
+    #entrance {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 40px 20px;
+      text-align: center;
+      animation: fadeIn 1.5s ease forwards;
+    }
+
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .door-sign {
+      border: 3px solid var(--green);
+      border-style: double;
+      padding: 8px 24px;
+      font-size: clamp(10px, 2.5vw, 13px);
+      letter-spacing: 6px;
+      color: var(--amber);
+      margin-bottom: 30px;
+      animation: signFlicker 4s infinite;
+    }
+
+    @keyframes signFlicker {
+      0%,100% { opacity:1; }
+      85% { opacity:1; }
+      86% { opacity:0.1; }
+      87% { opacity:1; }
+      92% { opacity:0.3; }
+      93% { opacity:1; }
+    }
+
+    .bigfoot-ascii {
+      font-size: clamp(9px, 2vw, 14px);
+      line-height: 1.3;
+      color: var(--green);
+      text-shadow: 0 0 8px var(--green);
+      white-space: pre;
+      margin-bottom: 20px;
+      animation: breathe 4s ease-in-out infinite;
+    }
+
+    @keyframes breathe {
+      0%,100% { text-shadow: 0 0 8px var(--green); }
+      50% { text-shadow: 0 0 20px var(--green), 0 0 40px var(--green); }
     }
 
     h1 {
-      font-family: 'Major Mono Display', monospace;
-      color: cyan;
-      text-shadow: 0 0 15px cyan;
-      font-size: 48px;
-      margin-top: 10px;
+      font-size: clamp(28px, 8vw, 64px);
+      color: var(--amber);
+      text-shadow: 0 0 10px var(--amber), 0 0 30px rgba(255,179,0,0.4);
+      letter-spacing: 4px;
+      margin-bottom: 6px;
+      animation: titlePulse 3s ease-in-out infinite;
     }
 
-    .warning {
-      color: red;
-      animation: blink 1.2s infinite;
-      margin-bottom: 20px;
+    @keyframes titlePulse {
+      0%,100% { letter-spacing: 4px; }
+      50% { letter-spacing: 6px; }
     }
 
-    @keyframes blink {
-      50% { opacity: 0; }
+    .subtitle {
+      font-size: clamp(10px, 2.5vw, 13px);
+      color: var(--green);
+      opacity: 0.6;
+      letter-spacing: 3px;
+      margin-bottom: 40px;
     }
 
-    .ascii {
-      color: #0ff;
-      white-space: pre;
-      font-size: 14px;
-      margin-bottom: 20px;
+    .bartender-intro {
+      max-width: 560px;
+      text-align: left;
+      border-left: 3px solid var(--amber);
+      padding: 16px 20px;
+      margin-bottom: 40px;
+      background: var(--fog);
     }
 
-    .alien { color: #0ff; }
-    .human { color: #0f0; }
-
-    .line {
-      margin: 12px 0;
-      min-height: 1.2em;
+    .bartender-intro .speaker {
+      color: var(--amber);
+      font-size: 11px;
+      letter-spacing: 2px;
+      margin-bottom: 8px;
     }
 
-    .menu {
-      border: 2px dashed cyan;
-      padding: 20px;
-      margin: 30px 0;
+    .bartender-intro p {
+      font-size: clamp(12px, 3vw, 15px);
+      line-height: 1.8;
+      color: #ccc;
     }
 
-    .menu h2 {
-      color: cyan;
-      text-shadow: 0 0 10px cyan;
+    .enter-btn {
+      background: transparent;
+      border: 2px solid var(--green);
+      color: var(--green);
+      font-family: 'Syne Mono', monospace;
+      font-size: clamp(13px, 3vw, 16px);
+      padding: 14px 40px;
+      cursor: pointer;
+      letter-spacing: 3px;
+      transition: all 0.2s;
+      touch-action: manipulation;
     }
 
-    .menu-item {
-      margin: 10px 0;
+    .enter-btn:hover, .enter-btn:active {
+      background: var(--green);
+      color: #080a08;
+      box-shadow: 0 0 30px var(--green);
     }
 
-    .input-box {
-      margin: 30px 0 60px;
+    /* ── BAR SCREEN ── */
+    #bar {
+      display: none;
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 30px 20px 80px;
     }
 
-    input {
-      background: black;
-      border: 2px solid cyan;
-      color: cyan;
-      padding: 8px;
-      width: 300px;
-      font-family: "Courier New", monospace;
+    .bar-header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid rgba(42,255,110,0.2);
+    }
+
+    .bar-header h2 {
+      font-size: clamp(18px, 5vw, 32px);
+      color: var(--amber);
+      letter-spacing: 3px;
+    }
+
+    .bar-header p {
+      font-size: 12px;
+      color: #666;
+      margin-top: 6px;
+      letter-spacing: 2px;
+    }
+
+    /* Mood meter */
+    .mood-bar-wrap {
+      margin: 20px 0;
       text-align: center;
     }
 
-    input:focus {
-      outline: none;
-      box-shadow: 0 0 15px cyan;
+    .mood-label {
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: #666;
+      margin-bottom: 6px;
     }
 
-    .hint {
-      font-size: 14px;
-      opacity: 0.7;
-      margin-top: 10px;
+    .mood-track {
+      width: 100%;
+      max-width: 400px;
+      height: 10px;
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 2px;
+      margin: 0 auto;
+      overflow: hidden;
     }
 
-    #resume {
-      display: none;
-      border: 2px solid cyan;
-      padding: 20px;
-      margin-top: 30px;
-      color: cyan;
+    #mood-fill {
+      height: 100%;
+      width: 50%;
+      background: var(--amber);
+      transition: width 0.6s ease, background 0.6s;
     }
 
-    .glitch {
-      animation: glitch 0.15s infinite;
+    #mood-text {
+      font-size: 12px;
+      color: var(--amber);
+      margin-top: 6px;
+      min-height: 18px;
     }
 
-    @keyframes glitch {
-      25% { transform: translate(2px, -2px); }
-      50% { transform: translate(-2px, 2px); }
-      75% { transform: translate(2px, 2px); }
+    /* Drink menu */
+    .menu-title {
+      font-size: 11px;
+      letter-spacing: 4px;
+      color: #555;
+      margin: 30px 0 16px;
+      text-align: center;
     }
 
-    .exit {
-      position: fixed;
-      bottom: 15px;
-      right: 20px;
-      color: cyan;
+    .drink-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 14px;
+      margin-bottom: 30px;
+    }
+
+    .drink-card {
+      border: 1px solid rgba(42,255,110,0.25);
+      padding: 16px;
       cursor: pointer;
+      transition: all 0.2s;
+      background: rgba(42,255,110,0.03);
+      touch-action: manipulation;
+      text-align: left;
+    }
+
+    .drink-card:hover, .drink-card:active {
+      border-color: var(--amber);
+      background: rgba(255,179,0,0.06);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(255,179,0,0.15);
+    }
+
+    .drink-card .drink-name {
+      color: var(--amber);
+      font-size: clamp(13px, 3vw, 15px);
+      margin-bottom: 6px;
+    }
+
+    .drink-card .drink-desc {
+      font-size: 12px;
+      color: #888;
+      line-height: 1.6;
+    }
+
+    .drink-card .drink-price {
+      font-size: 11px;
+      color: #555;
+      margin-top: 8px;
+      letter-spacing: 1px;
+    }
+
+    /* Response terminal */
+    #response-box {
+      border: 1px solid rgba(42,255,110,0.3);
+      padding: 20px;
+      min-height: 120px;
+      background: rgba(0,0,0,0.4);
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    #response-box .resp-speaker {
+      font-size: 10px;
+      color: var(--amber);
+      letter-spacing: 3px;
+      margin-bottom: 10px;
+    }
+
+    #response-text {
+      font-size: clamp(12px, 3vw, 14px);
+      color: #ccc;
+      line-height: 1.8;
+      min-height: 60px;
+    }
+
+    .response-effect {
+      margin-top: 12px;
+      font-size: 12px;
+      padding: 6px 10px;
+      display: inline-block;
+    }
+
+    .effect-good { color: var(--green); border: 1px solid var(--green); }
+    .effect-bad  { color: var(--red);   border: 1px solid var(--red); animation: shake 0.4s; }
+    .effect-weird { color: #cc66ff; border: 1px solid #cc66ff; }
+
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      25% { transform: translateX(-6px); }
+      75% { transform: translateX(6px); }
+    }
+
+    /* Score / stats */
+    .stats-row {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      font-size: 12px;
+      color: #555;
+      letter-spacing: 2px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .stat span { color: var(--green); }
+
+    /* Game over */
+    #gameover {
+      display: none;
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    #gameover h2 {
+      font-size: clamp(24px, 6vw, 48px);
+      color: var(--red);
+      text-shadow: 0 0 20px var(--red);
+      margin-bottom: 16px;
+      animation: shake 0.6s infinite;
+    }
+
+    #gameover p {
+      color: #999;
+      font-size: 14px;
+      line-height: 1.8;
+      max-width: 440px;
+      margin: 0 auto 30px;
+    }
+
+    /* Footer */
+    .exit-link {
+      position: fixed;
+      bottom: 16px;
+      right: 20px;
+      color: #444;
+      font-size: 11px;
+      cursor: pointer;
+      letter-spacing: 2px;
       text-decoration: underline;
-      z-index: 20;
+      z-index: 200;
+      touch-action: manipulation;
+    }
+
+    .exit-link:hover { color: var(--green); }
+
+    /* Glitch class */
+    .glitch-screen {
+      animation: screenGlitch 0.3s steps(1) 3;
+    }
+
+    @keyframes screenGlitch {
+      0%   { filter: none; }
+      33%  { filter: hue-rotate(90deg) brightness(1.5); transform: skewX(2deg); }
+      66%  { filter: hue-rotate(-90deg) brightness(0.5); transform: skewX(-2deg); }
+      100% { filter: none; transform: none; }
+    }
+
+    /* Drunk wobble */
+    .drunk {
+      animation: wobble 0.5s ease-in-out infinite alternate;
+    }
+
+    @keyframes wobble {
+      from { transform: rotate(-1.5deg); }
+      to   { transform: rotate(1.5deg); }
     }
   </style>
 </head>
-
 <body>
-  <div class="terminal" id="terminal">
 
-    <div class="warning">⚠ HUMAN DISGUISE REQUIRED ⚠</div>
+  <!-- ENTRANCE SCREEN -->
+  <div id="entrance">
+    <div class="door-sign">NO HUMANS &nbsp;•&nbsp; CRYPTIDS ONLY &nbsp;•&nbsp; PROBABLY</div>
 
-    <div class="ascii">
-      ⠀⠀⠀⠀⠀⢀⣴⣶⣦⡀
-      ⠀⠀⠀⠀⣠⣿⣿⣿⣿⣷⡀
-      ⠀⠀⠀⠀⣿⣿⣿⣿⣿⣿⡇
-      ⠀⠀⢀⣴⣿⣿⣿⣿⣿⣿⣿⣦
-      ⠀⠀⠈⠻⠿⠿⠿⠿⠿⠿⠟⠋
-    </div>
+    <div class="bigfoot-ascii">
+    ░░░░▄▄▄▄░░░░
+    ░░▄█████████▄░░
+    ░█████████████░
+    ░█▀▀▀███▀▀▀███░
+    ░█ ◉ ░░░ ◉  ██░
+    ░████▄▄▄▄████░░
+    ░░█▀▀▀▀▀▀▀▀█░░
+    ░░░█░░░░░░█░░░
+    ░░░░██████░░░░</div>
 
     <h1>THE SPEAKEASY</h1>
+    <div class="subtitle">EST. SOMEWHERE IN THE PACIFIC NORTHWEST &nbsp;•&nbsp; EST. 1967</div>
 
-    <!-- Bartender dialogue -->
-    <div id="dialogue">
-      <div class="line alien" data-text="BARTENDER: You hear the echo. That means you belong."></div>
-      <div class="line alien" data-text="BARTENDER: Relax. Disguise stable. Mostly."></div>
-      <div class="line alien" data-text="BARTENDER: This bar exists between signals."></div>
+    <div class="bartender-intro">
+      <div class="speaker">BIGFOOT — PROPRIETOR & HEAD BARTENDER</div>
+      <p>
+        "You found us. That either means you're clever or you followed the smell of pine and bad decisions.
+        Either way — you're in.<br><br>
+        We serve cryptids, people who've seen things, and whoever guesses our riddle.
+        The drinks are... unusual. Order carefully.
+        I've had to ask three government agents to leave this week already.
+        <br><br>
+        And yes, I have thumbs. Several lawyers have confirmed this."
+      </p>
     </div>
 
-    <div class="menu">
-      <h2>DRINK MENU (PROJECT ARCHIVES)</h2>
-      <div class="menu-item">🛸 ROSWELL SHOT — Incident response & recovery</div>
-      <div class="menu-item">📡 DEAD SIGNAL — Network monitoring & detection</div>
-      <div class="menu-item">🧬 THE HYBRID — Creative + cybersecurity systems</div>
-      <div class="menu-item">👁 THE OBSERVER — Blue team analysis & logging</div>
-    </div>
-
-    <div class="input-box">
-      <div class="alien">BARTENDER: Password if you want deeper access.</div>
-      <input id="password" placeholder="ENTER PASSWORD">
-      <div class="hint">Hint: It protects networks and secrets.</div>
-    </div>
-
-    <div id="resume">
-      <div>ACCESS GRANTED.</div>
-      <div>IDENTITY VERIFIED: TRUSTED OPERATOR</div>
-      <br>
-      <div>▶ Resume Terminal Online</div>
-      <div>▶ Role: Security / Network / Creative Hybrid</div>
-      <div>▶ Status: Actively Exploring New Worlds</div>
-      <br>
-      <a href="resume.html" style="color: cyan;">OPEN FULL RESUME</a>
-    </div>
-
+    <button class="enter-btn" onclick="enterBar()">TAKE A SEAT</button>
   </div>
 
-  <div class="exit" onclick="location.href='index.html'">EXIT BACK TO ARCADE</div>
+  <!-- BAR SCREEN -->
+  <div id="bar">
+    <div class="bar-header">
+      <h2>BIGFOOT'S SPEAKEASY</h2>
+      <p>ORDER WISELY &nbsp;•&nbsp; BARTENDER MOOD AFFECTS EVERYTHING</p>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat">DRINKS: <span id="drink-count">0</span></div>
+      <div class="stat">SURVIVED: <span id="survived">0</span></div>
+      <div class="stat">INCIDENTS: <span id="incidents">0</span></div>
+    </div>
+
+    <div class="mood-bar-wrap">
+      <div class="mood-label">BARTENDER MOOD</div>
+      <div class="mood-track"><div id="mood-fill"></div></div>
+      <div id="mood-text">Tolerant. For now.</div>
+    </div>
+
+    <div class="menu-title">— TONIGHT'S MENU —</div>
+
+    <div class="drink-grid" id="drink-grid"></div>
+
+    <div id="response-box">
+      <div class="resp-speaker">BIGFOOT</div>
+      <div id="response-text"></div>
+      <div id="effect-tag"></div>
+    </div>
+
+    <div id="gameover">
+      <h2>YOU'VE BEEN ASKED TO LEAVE</h2>
+      <p id="gameover-reason"></p>
+      <button class="enter-btn" onclick="resetGame()">SLINK BACK IN (NO ONE SAW THAT)</button>
+    </div>
+  </div>
+
+  <div class="exit-link" onclick="location.href='index.html'">← BACK TO ARCADE</div>
 
   <script>
-    /* Typewriter effect */
-    const lines = document.querySelectorAll('.line');
-    let lineIndex = 0;
-
-    function typeLine(line, text, i = 0) {
-      if (i < text.length) {
-        line.textContent += text.charAt(i);
-        setTimeout(() => typeLine(line, text, i + 1), 30);
+    // ── DRINKS ──
+    const drinks = [
+      {
+        name: "THE PATTERSON-GIMLIN",
+        desc: "Aged bourbon, pine smoke, something that was definitely just a shadow. Classic.",
+        price: "3 trail camera photos",
+        mood: +15,
+        effect: "good",
+        responses: [
+          "Solid choice. Old faithful. I've been making this since '67. Don't ask how old I am.",
+          "Good. You have taste. Unlike the last guy who ordered whatever the Mothman recommended.",
+          "A classic. I respect that. Also you can't see my left foot right now which is — fine. It's fine."
+        ]
+      },
+      {
+        name: "THE LOCH NESS MOCK-TAIL",
+        desc: "Exists in theory. May not actually arrive. Bartender will charge you anyway.",
+        price: "Belief and $12",
+        mood: -5,
+        effect: "weird",
+        responses: [
+          "Sure, I'll make it. *long pause* ...Here you go. *slides empty glass* It was there. You just missed it.",
+          "Ah yes. The Nessie. Technically I'm serving you right now. You're just not seeing it correctly.",
+          "Three people ordered this tonight. All three are still waiting. Still. Waiting."
+        ]
+      },
+      {
+        name: "THE MEN IN BLACK",
+        desc: "You won't remember ordering it. You won't remember being here. $14.",
+        price: "14 and your recent memory",
+        mood: -20,
+        effect: "bad",
+        responses: [
+          "*squints* You sure about that one? Three people ordered it and they left convinced they'd been at an Applebee's.",
+          "Fine. Here. *slides drink* By the way, have you always lived in Nebraska? You seem like a Nebraska person.",
+          "Last guy who ordered this tried to debunk me afterward. He works at a think tank now. Poor soul."
+        ]
+      },
+      {
+        name: "SWAMP GAS SOUR",
+        desc: "Locally fermented, legally questionable, definitely natural. Pairs with denial.",
+        price: "Dignity",
+        mood: +5,
+        effect: "good",
+        responses: [
+          "Great choice. I made this myself. The 'swamp' part is metaphorical. Mostly.",
+          "Excellent. Goes great with not asking questions. You seem like you don't ask questions.",
+          "My second best seller. First is silence. You can't order that. It comes standard."
+        ]
+      },
+      {
+        name: "ALIEN AUTOPSY ON THE ROCKS",
+        desc: "Whatever was in that Roswell warehouse, blended, chilled. Served with gloves.",
+        price: "Classified",
+        mood: +10,
+        effect: "weird",
+        responses: [
+          "I have a guy. Don't ask about the guy. The drink is good though.",
+          "*serves it wearing oven mitts* It glows a little. That's normal. It's fine.",
+          "Real talk? I don't know what's in this either. It arrived in a crate stamped AREA 51 SURPLUS."
+        ]
+      },
+      {
+        name: "SHADOW PERSON ESPRESSO",
+        desc: "You'll only see it in your peripheral vision. Very dark. No milk, obviously.",
+        price: "Sleep (tonight's)",
+        mood: +5,
+        effect: "weird",
+        responses: [
+          "Bold choice at this hour. Bold. *slides it across without looking at it*",
+          "It's watching you drink it. That's normal. Just don't make eye contact with the cup.",
+          "I respect anyone who orders the Shadow Espresso. Reckless. Chaotic. My kind of people."
+        ]
+      },
+      {
+        name: "GOVERNMENT DENIALITA",
+        desc: "Official cocktail. Nothing to see here. Move along. Very refreshing. Normal drink.",
+        price: "Your credibility",
+        mood: -30,
+        effect: "bad",
+        responses: [
+          "*stares at you for a full ten seconds* GET. OUT.",
+          "I didn't survive forty years of hunts to serve THAT in my own bar. Consider yourself warned.",
+          "You know what? No. I have limits. That drink is a betrayal. Like cargo shorts."
+        ]
+      },
+      {
+        name: "THE CRYPTID'S CHOICE",
+        desc: "Bartender picks. May involve fur. Almost certainly involves consequence.",
+        price: "Trust",
+        mood: +25,
+        effect: "good",
+        responses: [
+          "I like you. Here's something I've been saving. It tastes like dawn in a forest that's never had a road.",
+          "Smart. Let the professional decide. *mixes something that smells like pine and mischief* You're gonna love this.",
+          "Respect. Full creative control. *enormous hairy hands start mixing aggressively* This is an EVENT."
+        ]
       }
+    ];
+
+    let mood = 50;
+    let drinkCount = 0;
+    let survived = 0;
+    let incidents = 0;
+    let typing = false;
+
+    function enterBar() {
+      document.getElementById('entrance').style.display = 'none';
+      document.getElementById('bar').style.display = 'block';
+      renderDrinks();
+      updateMoodUI();
     }
 
-    function startDialogue() {
-      if (lineIndex < lines.length) {
-        const line = lines[lineIndex];
-        const text = line.dataset.text;
-        typeLine(line, text);
-        lineIndex++;
-        setTimeout(startDialogue, 800);
-      }
+    function renderDrinks() {
+      const grid = document.getElementById('drink-grid');
+      grid.innerHTML = '';
+      drinks.forEach((d, i) => {
+        const card = document.createElement('div');
+        card.className = 'drink-card';
+        card.innerHTML = `
+          <div class="drink-name">${d.name}</div>
+          <div class="drink-desc">${d.desc}</div>
+          <div class="drink-price">💸 ${d.price}</div>
+        `;
+        card.onclick = () => orderDrink(i);
+        grid.appendChild(card);
+      });
     }
 
-    startDialogue();
+    function orderDrink(i) {
+      if (typing) return;
+      const drink = drinks[i];
+      drinkCount++;
+      document.getElementById('drink-count').textContent = drinkCount;
 
-    /* Password logic */
-    const passwordInput = document.getElementById('password');
-    const resume = document.getElementById('resume');
-    const terminal = document.getElementById('terminal');
+      // Update mood
+      mood = Math.max(0, Math.min(100, mood + drink.mood));
+      updateMoodUI();
 
-    passwordInput.addEventListener('keydown', e => {
-      if (e.key === 'Enter') {
-        if (passwordInput.value.toLowerCase().trim() === 'firewall') {
-          resume.style.display = 'block';
-          passwordInput.style.display = 'none';
+      // Show response box
+      const box = document.getElementById('response-box');
+      box.style.display = 'block';
+      box.style.borderColor = drink.effect === 'bad' ? 'var(--red)' : drink.effect === 'weird' ? '#cc66ff' : 'rgba(42,255,110,0.3)';
+
+      const responseText = drink.responses[Math.floor(Math.random() * drink.responses.length)];
+      typeText('response-text', responseText, () => {
+        const effectTag = document.getElementById('effect-tag');
+        if (drink.effect === 'good') {
+          survived++;
+          document.getElementById('survived').textContent = survived;
+          effectTag.innerHTML = `<span class="response-effect effect-good">+MOOD ${drink.mood > 0 ? '+' : ''}${drink.mood}</span>`;
+        } else if (drink.effect === 'bad') {
+          incidents++;
+          document.getElementById('incidents').textContent = incidents;
+          effectTag.innerHTML = `<span class="response-effect effect-bad">MOOD ${drink.mood} ⚠</span>`;
+          document.body.classList.add('glitch-screen');
+          setTimeout(() => document.body.classList.remove('glitch-screen'), 1000);
         } else {
-          terminal.classList.add('glitch');
-          setTimeout(() => terminal.classList.remove('glitch'), 400);
-          passwordInput.value = '';
+          effectTag.innerHTML = `<span class="response-effect effect-weird">REALITY SHIFT</span>`;
+          document.body.classList.add('drunk');
+          setTimeout(() => document.body.classList.remove('drunk'), 2000);
         }
+      });
+
+      // Check game over
+      if (mood <= 0) {
+        setTimeout(triggerGameOver, 2200);
       }
-    });
+    }
+
+    function typeText(elId, text, onDone) {
+      typing = true;
+      const el = document.getElementById(elId);
+      el.textContent = '';
+      document.getElementById('effect-tag').innerHTML = '';
+      let i = 0;
+      const interval = setInterval(() => {
+        el.textContent += text.charAt(i);
+        i++;
+        if (i >= text.length) {
+          clearInterval(interval);
+          typing = false;
+          if (onDone) onDone();
+        }
+      }, 22);
+    }
+
+    function updateMoodUI() {
+      const fill = document.getElementById('mood-fill');
+      const text = document.getElementById('mood-text');
+      fill.style.width = mood + '%';
+
+      if (mood >= 80) {
+        fill.style.background = 'var(--green)';
+        text.textContent = 'Delighted. He\'s showing you photos of his feet.';
+      } else if (mood >= 60) {
+        fill.style.background = 'var(--green)';
+        text.textContent = 'Good. He\'s humming to himself.';
+      } else if (mood >= 40) {
+        fill.style.background = 'var(--amber)';
+        text.textContent = 'Tolerant. The eyebrow situation is neutral.';
+      } else if (mood >= 20) {
+        fill.style.background = '#ff7700';
+        text.textContent = 'Irritated. He\'s making eye contact for too long.';
+        text.style.color = '#ff7700';
+      } else {
+        fill.style.background = 'var(--red)';
+        text.textContent = '⚠ DANGER ZONE. He\'s reaching for the broom.';
+        text.style.color = 'var(--red)';
+      }
+    }
+
+    const gameOverReasons = [
+      "Bigfoot personally carried you to the parking lot. You weigh less than he expected. He seemed disappointed.",
+      "You ordered one too many government-adjacent drinks. He left a note. It said 'NO.' Very large letters.",
+      "The bartender's mood collapsed. He stared at you silently for 45 seconds, then pointed at the door with one enormous finger.",
+      "You have been 86'd from a bar run by a mythological creature. Reflect on your choices.",
+      "Official verdict: 'Too many weird vibes, not enough weird drinks.' — Bigfoot, proprietor."
+    ];
+
+    function triggerGameOver() {
+      document.getElementById('drink-grid').style.display = 'none';
+      document.getElementById('response-box').style.display = 'none';
+      document.getElementById('gameover').style.display = 'block';
+      document.getElementById('gameover-reason').textContent =
+        gameOverReasons[Math.floor(Math.random() * gameOverReasons.length)];
+    }
+
+    function resetGame() {
+      mood = 50;
+      drinkCount = 0;
+      survived = 0;
+      incidents = 0;
+      document.getElementById('drink-count').textContent = 0;
+      document.getElementById('survived').textContent = 0;
+      document.getElementById('incidents').textContent = 0;
+      document.getElementById('gameover').style.display = 'none';
+      document.getElementById('drink-grid').style.display = 'grid';
+      document.getElementById('response-box').style.display = 'none';
+      document.getElementById('mood-text').style.color = 'var(--amber)';
+      updateMoodUI();
+    }
   </script>
 </body>
 </html>
