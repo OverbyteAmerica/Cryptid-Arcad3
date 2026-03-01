@@ -2,215 +2,321 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Bigfoot Cyber Hunt Training</title>
 <style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
   body {
-    margin: 0;
     background: #050505;
     color: #aa66ff;
     font-family: monospace;
     text-align: center;
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    overflow: hidden;
   }
-  h1 { margin: 8px; color: #aa66ff; }
-  canvas {
-    border: 3px solid #aa66ff;
-    background: #111;
-    touch-action: none;
+
+  h1 {
+    font-size: clamp(14px, 4vw, 22px);
+    color: #aa66ff;
+    padding: 6px 0 2px;
+    text-shadow: 0 0 8px #aa66ff;
+    letter-spacing: 2px;
   }
+
   #info {
-    font-size: 14px;
-    padding: 6px;
+    font-size: clamp(10px, 2.5vw, 13px);
+    padding: 4px 10px;
     color: #cc99ff;
-    max-width: 90%;
-    margin: auto;
+    max-width: 95%;
+    line-height: 1.4;
   }
+
   #barometer {
-    height: 10px;
+    height: 8px;
     width: 80%;
     background: #333;
-    margin: 6px auto;
+    margin: 4px auto;
     border-radius: 5px;
     overflow: hidden;
   }
+
   #barFill {
     height: 100%;
     width: 0%;
     background: #aa66ff;
     transition: width 0.3s;
   }
+
+  canvas {
+    border: 3px solid #aa66ff;
+    background: #111;
+    touch-action: none;
+    display: block;
+    box-shadow: 0 0 20px rgba(170,102,255,0.4);
+  }
+
+  /* D-PAD CONTROLS */
+  #dpad {
+    display: grid;
+    grid-template-areas:
+      ". up ."
+      "left . right"
+      ". down .";
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+    margin-top: 10px;
+    width: clamp(160px, 40vw, 200px);
+  }
+
+  .dpad-btn {
+    background: rgba(170,102,255,0.15);
+    border: 2px solid #aa66ff;
+    color: #aa66ff;
+    font-size: clamp(18px, 5vw, 26px);
+    cursor: pointer;
+    border-radius: 6px;
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    touch-action: manipulation;
+    transition: background 0.1s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .dpad-btn:active {
+    background: rgba(170,102,255,0.5);
+    box-shadow: 0 0 12px #aa66ff;
+  }
+
+  #btn-up    { grid-area: up; }
+  #btn-left  { grid-area: left; }
+  #btn-right { grid-area: right; }
+  #btn-down  { grid-area: down; }
 </style>
 </head>
 <body>
-<h1>BIGFOOT: CYBER TRAINING</h1>
-<div id="info">Cyber Training Exercise: Bigfoot is practicing evasion. Avoid network hunters (IDS, scanners, packet trackers). Scan beams indicate active detection zones. Use stealth and observation to survive each training module.</div>
+
+<h1>BIGFOOT.EXE</h1>
+<div id="info">Avoid network hunters. Reach the bottom-right corner to advance.</div>
 <div id="barometer"><div id="barFill"></div></div>
+
 <canvas id="game"></canvas>
+
+<!-- D-PAD -->
+<div id="dpad">
+  <button class="dpad-btn" id="btn-up"    ontouchstart="handleMove(0,-1)" onclick="move(0,-1)">▲</button>
+  <button class="dpad-btn" id="btn-left"  ontouchstart="handleMove(-1,0)" onclick="move(-1,0)">◀</button>
+  <button class="dpad-btn" id="btn-right" ontouchstart="handleMove(1,0)"  onclick="move(1,0)">▶</button>
+  <button class="dpad-btn" id="btn-down"  ontouchstart="handleMove(0,1)"  onclick="move(0,1)">▼</button>
+</div>
 
 <script>
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-let size = Math.min(window.innerWidth, 500);
+// Size canvas to fit screen with room for UI and dpad
+function calcSize() {
+  const usedH = 170; // h1 + info + bar + dpad + gaps
+  const maxW = window.innerWidth - 20;
+  const maxH = window.innerHeight - usedH;
+  return Math.min(maxW, maxH, 480);
+}
+
+let size = calcSize();
 canvas.width = size;
 canvas.height = size;
 
 const grid = 12;
-const tile = canvas.width / grid;
+let tile = canvas.width / grid;
 
 let level = 1;
 let fog = [];
 let glitch = 0;
-
 let player = {x: 1, y: 1};
 let hunters = [];
 
-function newLevel(){
+function newLevel() {
   hunters = [];
-  for(let i=0;i<level;i++){
+  for (let i = 0; i < level; i++) {
     hunters.push({
-      x: Math.floor(Math.random()*grid),
-      y: Math.floor(Math.random()*grid),
-      dir: Math.floor(Math.random()*4)
+      x: Math.floor(Math.random() * grid),
+      y: Math.floor(Math.random() * grid),
+      dir: Math.floor(Math.random() * 4)
     });
   }
-  fog = Array(grid).fill().map(()=>Array(grid).fill(true));
-
+  fog = Array(grid).fill().map(() => Array(grid).fill(true));
   document.getElementById('info').innerHTML =
-  `Bigfoot Training Exercise: You are practicing the art of evasion. Avoid network hunters (IDS, scanners, packet trackers). Scan beams indicate active detection zones. Use stealth and observation to survive each training module.<br>Module ${level}: Network detection systems intensify.`;
+    `Module ${level}: Avoid hunters (red). Reach ▼▶ corner to advance.`;
 }
 
 newLevel();
 
-function reveal(){
-  for(let dx=-2;dx<=2;dx++){
-    for(let dy=-2;dy<=2;dy++){
+function reveal() {
+  for (let dx = -2; dx <= 2; dx++) {
+    for (let dy = -2; dy <= 2; dy++) {
       let x = player.x + dx;
       let y = player.y + dy;
-      if(x>=0 && y>=0 && x<grid && y<grid){
-        fog[y][x] = false;
-      }
+      if (x >= 0 && y >= 0 && x < grid && y < grid) fog[y][x] = false;
     }
   }
 }
 
-function draw(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // grid
-  for(let y=0;y<grid;y++){
-    for(let x=0;x<grid;x++){
+  // Grid lines
+  for (let y = 0; y < grid; y++) {
+    for (let x = 0; x < grid; x++) {
       ctx.strokeStyle = "#330044";
-      ctx.strokeRect(x*tile,y*tile,tile,tile);
+      ctx.strokeRect(x * tile, y * tile, tile, tile);
     }
   }
+
+  // Goal indicator
+  ctx.fillStyle = "rgba(0,255,100,0.15)";
+  ctx.fillRect((grid-1)*tile, (grid-1)*tile, tile, tile);
+  ctx.fillStyle = "#00ff66";
+  ctx.font = `${tile * 0.5}px monospace`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("▶", (grid - 0.5) * tile, (grid - 0.5) * tile);
 
   reveal();
 
-  // player
+  // Player
   ctx.fillStyle = "#cc66ff";
   ctx.shadowColor = "#cc66ff";
   ctx.shadowBlur = 12;
-  ctx.fillRect(player.x*tile+4,player.y*tile+4,tile-8,tile-8);
+  ctx.fillRect(player.x * tile + 4, player.y * tile + 4, tile - 8, tile - 8);
   ctx.shadowBlur = 0;
 
-  // hunters + scan beams
-  hunters.forEach(h=>{
+  // Draw bigfoot label
+  ctx.fillStyle = "#fff";
+  ctx.font = `bold ${tile * 0.35}px monospace`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("BF", (player.x + 0.5) * tile, (player.y + 0.5) * tile);
+
+  // Hunters + scan beams
+  hunters.forEach(h => {
+    // Scan beam
+    ctx.fillStyle = "rgba(255,0,68,0.18)";
+    if (h.dir === 0) ctx.fillRect(h.x * tile, 0, tile, h.y * tile);
+    if (h.dir === 1) ctx.fillRect((h.x + 1) * tile, h.y * tile, canvas.width - (h.x + 1) * tile, tile);
+    if (h.dir === 2) ctx.fillRect(h.x * tile, (h.y + 1) * tile, tile, canvas.height - (h.y + 1) * tile);
+    if (h.dir === 3) ctx.fillRect(0, h.y * tile, h.x * tile, tile);
+
+    // Hunter body
     ctx.fillStyle = "#ff0044";
     ctx.shadowColor = "#ff0044";
     ctx.shadowBlur = 10;
-    ctx.fillRect(h.x*tile+6,h.y*tile+6,tile-12,tile-12);
+    ctx.fillRect(h.x * tile + 6, h.y * tile + 6, tile - 12, tile - 12);
     ctx.shadowBlur = 0;
 
-    ctx.fillStyle = "rgba(255,0,68,0.3)";
-    if(h.dir === 0) ctx.fillRect(h.x*tile,0,tile,h.y*tile);
-    if(h.dir === 1) ctx.fillRect((h.x+1)*tile,h.y*tile,canvas.width,h.y*tile);
-    if(h.dir === 2) ctx.fillRect(h.x*tile,(h.y+1)*tile,tile,canvas.height-(h.y+1)*tile);
-    if(h.dir === 3) ctx.fillRect(0,h.y*tile,h.x*tile,tile);
+    // Hunter label
+    ctx.fillStyle = "#fff";
+    ctx.font = `bold ${tile * 0.3}px monospace`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("IDS", (h.x + 0.5) * tile, (h.y + 0.5) * tile);
   });
 
-  // fog
-  for(let y=0;y<grid;y++){
-    for(let x=0;x<grid;x++){
-      if(fog[y][x]){
-        ctx.fillStyle = "rgba(0,0,0,0.85)";
-        ctx.fillRect(x*tile,y*tile,tile,tile);
+  // Fog of war
+  for (let y = 0; y < grid; y++) {
+    for (let x = 0; x < grid; x++) {
+      if (fog[y][x]) {
+        ctx.fillStyle = "rgba(0,0,0,0.88)";
+        ctx.fillRect(x * tile, y * tile, tile, tile);
       }
     }
   }
 
-  // glitch effect for suspense
-  if(glitch>0){
-    ctx.fillStyle = "rgba(170,102,255,"+ (glitch/5) + ")";
-    ctx.fillRect(0,0,canvas.width,canvas.height);
+  // Glitch flash
+  if (glitch > 0) {
+    ctx.fillStyle = `rgba(170,102,255,${glitch / 5})`;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
     glitch--;
   }
 
-  // barometer (Network Threat Meter)
-  document.getElementById('barFill').style.width = Math.min((level-1)*10,100)+'%';
+  document.getElementById('barFill').style.width = Math.min((level - 1) * 10, 100) + '%';
 }
 
-function move(dx,dy){
-  player.x = Math.max(0,Math.min(grid-1,player.x+dx));
-  player.y = Math.max(0,Math.min(grid-1,player.y+dy));
+let lastMoveTime = 0;
+function handleMove(dx, dy) {
+  const now = Date.now();
+  if (now - lastMoveTime < 120) return; // debounce
+  lastMoveTime = now;
+  move(dx, dy);
+}
+
+function move(dx, dy) {
+  player.x = Math.max(0, Math.min(grid - 1, player.x + dx));
+  player.y = Math.max(0, Math.min(grid - 1, player.y + dy));
   huntersMove();
   detect();
 
-  if(player.x === grid-1 && player.y === grid-1){
+  if (player.x === grid - 1 && player.y === grid - 1) {
     level++;
-    player = {x:1,y:1};
+    player = {x: 1, y: 1};
     newLevel();
   }
 }
 
-function huntersMove(){
-  hunters.forEach(h=>{
-    if(Math.random()<0.5){
-      if(h.x < player.x) h.x++;
-      else if(h.x > player.x) h.x--;
-    }else{
-      if(h.y < player.y) h.y++;
-      else if(h.y > player.y) h.y--;
+function huntersMove() {
+  hunters.forEach(h => {
+    if (Math.random() < 0.5) {
+      if (h.x < player.x) h.x++;
+      else if (h.x > player.x) h.x--;
+    } else {
+      if (h.y < player.y) h.y++;
+      else if (h.y > player.y) h.y--;
     }
-
-    if(Math.random()<0.2) h.dir = Math.floor(Math.random()*4);
-
-    let dist = Math.abs(player.x-h.x)+Math.abs(player.y-h.y);
-    if(dist<3) glitch=3;
+    if (Math.random() < 0.2) h.dir = Math.floor(Math.random() * 4);
+    let dist = Math.abs(player.x - h.x) + Math.abs(player.y - h.y);
+    if (dist < 3) glitch = 3;
   });
 }
 
-function detect(){
-  hunters.forEach(h=>{
-    if(h.x===player.x && h.y===player.y){
-      alert("DETECTED! Bigfoot has been captured by the network. Training module failed.");
+function detect() {
+  hunters.forEach(h => {
+    if (h.x === player.x && h.y === player.y) {
+      alert("DETECTED! Bigfoot captured. Restarting module.");
       level = 1;
-      player = {x:1,y:1};
+      player = {x: 1, y: 1};
       newLevel();
     }
   });
 }
 
-window.addEventListener("keydown",e=>{
-  if(e.key === "ArrowUp") move(0,-1);
-  if(e.key === "ArrowDown") move(0,1);
-  if(e.key === "ArrowLeft") move(-1,0);
-  if(e.key === "ArrowRight") move(1,0);
+// Keyboard support
+window.addEventListener("keydown", e => {
+  if (e.key === "ArrowUp")    { e.preventDefault(); move(0, -1); }
+  if (e.key === "ArrowDown")  { e.preventDefault(); move(0,  1); }
+  if (e.key === "ArrowLeft")  { e.preventDefault(); move(-1, 0); }
+  if (e.key === "ArrowRight") { e.preventDefault(); move(1,  0); }
 });
 
-canvas.addEventListener("touchstart",e=>{
-  let t = e.touches[0];
-  let rect = canvas.getBoundingClientRect();
-  let x = t.clientX - rect.left;
-  let y = t.clientY - rect.top;
-
-  if(x < canvas.width/3) move(-1,0);
-  else if(x > canvas.width*2/3) move(1,0);
-  else if(y < canvas.height/2) move(0,-1);
-  else move(0,1);
+// Prevent dpad touch from also firing click
+document.querySelectorAll('.dpad-btn').forEach(btn => {
+  btn.addEventListener('touchstart', e => e.preventDefault(), { passive: false });
 });
 
-function loop(){
+// Resize handler
+window.addEventListener('resize', () => {
+  size = calcSize();
+  canvas.width = size;
+  canvas.height = size;
+  tile = canvas.width / grid;
+});
+
+function loop() {
   draw();
   requestAnimationFrame(loop);
 }
@@ -218,4 +324,3 @@ loop();
 </script>
 </body>
 </html>
-
