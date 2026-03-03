@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Katt Slade | Privacy & Network Security</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Shrikhand&family=Syne+Mono&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --red: #ff2a2a;
+    --red-dim: rgba(255,42,42,0.15);
+    --red-glow: rgba(255,42,42,0.4);
+    --bg: #090909;
+    --bg2: #111;
+    --border: rgba(255,42,42,0.25);
+    --text: #ccc;
+    --text-dim: #555;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Syne Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* Subtle scanline overlay */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent,
+      transparent 3px,
+      rgba(0,0,0,0.1) 3px,
+      rgba(0,0,0,0.1) 4px
+    );
+    pointer-events: none;
+    z-index: 100;
+  }
+
+  /* ── HEADER ── */
+  header {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: clamp(50px, 10vh, 100px) clamp(20px, 5vw, 60px) clamp(30px, 6vh, 60px);
+    position: relative;
+  }
+
+  .header-label {
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--red);
+    margin-bottom: 16px;
+    opacity: 0.8;
+  }
+
+  h1 {
+    font-family: 'Shrikhand', cursive;
+    font-size: clamp(52px, 12vw, 110px);
+    color: var(--red);
+    text-shadow: 0 0 30px var(--red-glow), 0 0 60px rgba(255,42,42,0.2);
+    line-height: 1;
+    margin-bottom: 20px;
+    animation: titleFlicker 6s ease-in-out infinite;
+  }
+
+  @keyframes titleFlicker {
+    0%, 100% { opacity: 1; text-shadow: 0 0 30px var(--red-glow), 0 0 60px rgba(255,42,42,0.2); }
+    92% { opacity: 1; }
+    93% { opacity: 0.6; text-shadow: none; }
+    94% { opacity: 1; }
+    97% { opacity: 0.8; }
+    98% { opacity: 1; }
+  }
+
+  .tagline {
+    font-family: 'Shrikhand', cursive;
+    font-size: clamp(16px, 4vw, 26px);
+    color: #fff;
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+  }
+
+  .tagline span {
+    color: var(--red);
+  }
+
+  .header-desc {
+    font-size: clamp(12px, 2.5vw, 14px);
+    color: var(--text-dim);
+    max-width: 480px;
+    line-height: 1.8;
+  }
+
+  /* Red divider line */
+  .divider {
+    width: 60px;
+    height: 3px;
+    background: var(--red);
+    margin: 24px 0;
+    box-shadow: 0 0 10px var(--red-glow);
+  }
+
+  /* ── MAIN CONTAINER ── */
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 clamp(20px, 5vw, 60px) 80px;
+  }
+
+  /* ── SECTIONS ── */
+  section {
+    margin-bottom: clamp(50px, 8vh, 80px);
+  }
+
+  h2 {
+    font-family: 'Shrikhand', cursive;
+    font-size: clamp(22px, 5vw, 34px);
+    color: var(--red);
+    text-shadow: 0 0 15px var(--red-glow);
+    margin-bottom: 24px;
+    letter-spacing: 1px;
+  }
+
+  p {
+    font-size: clamp(13px, 2.5vw, 15px);
+    color: var(--text);
+    max-width: 620px;
+    line-height: 1.9;
+  }
+
+  /* ── CARDS ── */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+  }
+
+  .card {
+    border: 1px solid var(--border);
+    padding: 22px;
+    background: var(--bg2);
+    transition: all 0.25s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px;
+    height: 100%;
+    background: var(--red);
+    opacity: 0;
+    transition: opacity 0.25s;
+  }
+
+  .card:hover {
+    border-color: var(--red);
+    background: var(--red-dim);
+    transform: translateX(4px);
+    box-shadow: 0 0 20px var(--red-glow);
+  }
+
+  .card:hover::before {
+    opacity: 1;
+  }
+
+  .card strong {
+    display: block;
+    font-family: 'Shrikhand', cursive;
+    font-size: clamp(14px, 3vw, 17px);
+    color: #fff;
+    margin-bottom: 8px;
+    letter-spacing: 0.5px;
+  }
+
+  .card p {
+    font-size: clamp(12px, 2.5vw, 13px);
+    color: var(--text-dim);
+    line-height: 1.7;
+    max-width: none;
+  }
+
+  /* ── LINKS / CONNECT ── */
+  .links-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+  }
+
+  .link-card {
+    border: 1px solid var(--border);
+    padding: 16px 20px;
+    background: var(--bg2);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    display: block;
+  }
+
+  .link-card:hover {
+    border-color: var(--red);
+    background: var(--red-dim);
+    box-shadow: 0 0 15px var(--red-glow);
+  }
+
+  .link-card span {
+    font-family: 'Shrikhand', cursive;
+    font-size: clamp(14px, 3vw, 16px);
+    color: #fff;
+    letter-spacing: 0.5px;
+  }
+
+  .link-card .link-arrow {
+    color: var(--red);
+    margin-left: 6px;
+    transition: transform 0.2s;
+    display: inline-block;
+  }
+
+  .link-card:hover .link-arrow {
+    transform: translateX(4px);
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 30px clamp(20px, 5vw, 60px) 50px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+  }
+
+  footer span {
+    color: var(--red);
+  }
+</style>
+</head>
+
+<body>
+
+<header>
+  <div class="header-label">SECURITY OPERATOR / PRIVACY ENGINEER</div>
+  <h1>Katt Slade</h1>
+  <div class="tagline">Privacy <span>•</span> Network Security <span>•</span> Blue Team</div>
+  <div class="divider"></div>
+  <p class="header-desc">Designing secure systems that protect people, data, and infrastructure. Building defenses that hold.</p>
+</header>
+
+<div class="container">
+
+  <section>
+    <h2>Mission</h2>
+    <p>
+      I focus on building and defending privacy-first networks. My goal is to work in security operations and privacy engineering — using automation, threat detection, and AI to help organizations connect and protect in a digital world.
+    </p>
+  </section>
+
+  <section>
+    <h2>Career Trajectory</h2>
+    <div class="grid">
+      <div class="card">
+        <strong>Blue Team & SOC</strong>
+        <p>Threat monitoring, incident response, and defensive security strategy.</p>
+      </div>
+      <div class="card">
+        <strong>Network Security</strong>
+        <p>Secure architecture, segmentation, and defensive infrastructure.</p>
+      </div>
+      <div class="card">
+        <strong>Privacy Engineering</strong>
+        <p>Identity, access, and data protection principles.</p>
+      </div>
+      <div class="card">
+        <strong>Security Automation</strong>
+        <p>AI-assisted workflows and security operations efficiency.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Projects</h2>
+    <div class="grid">
+      <div class="card">
+        <strong>Cryptid Arcade</strong>
+        <p>Cybersecurity training platform focused on threat detection and defensive thinking.</p>
+      </div>
+      <div class="card">
+        <strong>Fulton County Research</strong>
+        <p>Analysis of public-sector security incidents and defensive improvements.</p>
+      </div>
+      <div class="card">
+        <strong>Secure Hardware Initiative</strong>
+        <p>Refurbishing and distributing neutralized systems for underserved communities.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Connect</h2>
+    <div class="links-grid">
+      <a href="#" class="link-card"><span>Resume<span class="link-arrow">→</span></span></a>
+      <a href="#" class="link-card"><span>LinkedIn<span class="link-arrow">→</span></span></a>
+      <a href="#" class="link-card"><span>GitHub<span class="link-arrow">→</span></span></a>
+      <a href="#" class="link-card"><span>YouTube<span class="link-arrow">→</span></span></a>
+      <a href="#" class="link-card"><span>Contact<span class="link-arrow">→</span></span></a>
+    </div>
+  </section>
+
+</div>
+
+<footer>
+  © 2026 <span>Katt Slade</span> — Connect + Protect
+</footer>
+
+</body>
+</html>

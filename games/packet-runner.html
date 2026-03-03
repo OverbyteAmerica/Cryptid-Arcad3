@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Packet Run: Tomb of the Stack</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --gold: #c8a84b;
+  --gold2: #f0d078;
+  --amber: #e07820;
+  --stone: #2a2016;
+  --stone2: #1a140d;
+  --moss: #3a4830;
+  --red: #cc2200;
+  --green: #4a8840;
+  --glow: rgba(200,168,75,0.4);
+  --text: #d4c090;
+  --dim: #6a5a30;
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+
+body {
+  font-family:'Crimson Text',serif;
+  background:var(--stone2);
+  color:var(--text);
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* ── TORCH FLICKER OVERLAY ── */
+body::before {
+  content:'';
+  position:fixed;
+  inset:0;
+  background:radial-gradient(ellipse at 20% 10%, rgba(200,100,20,0.08) 0%, transparent 50%),
+             radial-gradient(ellipse at 80% 80%, rgba(180,80,10,0.06) 0%, transparent 50%);
+  pointer-events:none;
+  z-index:1;
+  animation:torchFlicker 3s ease-in-out infinite alternate;
+}
+@keyframes torchFlicker {
+  0%{opacity:0.6;}50%{opacity:1;}100%{opacity:0.7;}
+}
+
+/* Stone texture overlay */
+body::after {
+  content:'';
+  position:fixed;
+  inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events:none;
+  z-index:0;
+}
+
+canvas#bg { position:fixed; top:0;left:0;z-index:-1; }
+
+.screen { display:none; min-height:100vh; position:relative; z-index:2; }
+.screen.active { display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; }
+
+/* ── RUNE BORDER ── */
+.rune-border {
+  border:2px solid var(--gold);
+  box-shadow:0 0 20px var(--glow), inset 0 0 20px rgba(200,168,75,0.05);
+  position:relative;
+}
+.rune-border::before, .rune-border::after {
+  content:'◈';
+  position:absolute;
+  color:var(--gold);
+  font-size:18px;
+  line-height:1;
+}
+.rune-border::before { top:-12px; left:50%; transform:translateX(-50%); }
+.rune-border::after  { bottom:-12px; left:50%; transform:translateX(-50%); }
+
+/* ── INTRO ── */
+#screen-intro { text-align:center; background:radial-gradient(ellipse at center, #1e1508 0%, #0a0804 100%); }
+
+.intro-eyebrow {
+  font-family:'Cinzel',serif;
+  font-size:11px;
+  letter-spacing:6px;
+  color:var(--dim);
+  margin-bottom:20px;
+}
+
+.game-title {
+  font-family:'Cinzel',serif;
+  font-size:clamp(28px,9vw,72px);
+  font-weight:900;
+  color:var(--gold);
+  text-shadow:0 0 30px var(--glow), 0 0 60px rgba(200,168,75,0.2), 2px 2px 0 #000;
+  line-height:1.1;
+  margin-bottom:6px;
+  animation:goldFlicker 5s ease-in-out infinite;
+}
+@keyframes goldFlicker {
+  0%,100%{text-shadow:0 0 30px var(--glow),0 0 60px rgba(200,168,75,0.2),2px 2px 0 #000;}
+  90%{text-shadow:0 0 30px var(--glow),0 0 60px rgba(200,168,75,0.2),2px 2px 0 #000;}
+  91%{text-shadow:none;}
+  92%{text-shadow:0 0 30px var(--glow),0 0 60px rgba(200,168,75,0.2),2px 2px 0 #000;}
+}
+
+.game-subtitle {
+  font-family:'Cinzel',serif;
+  font-size:clamp(12px,3vw,20px);
+  color:var(--amber);
+  letter-spacing:3px;
+  margin-bottom:30px;
+}
+
+.story-scroll {
+  max-width:580px;
+  background:rgba(10,8,4,0.8);
+  border:1px solid rgba(200,168,75,0.3);
+  border-top:3px solid var(--gold);
+  border-bottom:3px solid var(--gold);
+  padding:24px 28px;
+  margin-bottom:30px;
+  text-align:left;
+  font-size:clamp(13px,2.5vw,16px);
+  line-height:1.9;
+  color:#b09060;
+  font-style:italic;
+}
+.story-scroll .speaker {
+  font-family:'Cinzel',serif;
+  font-style:normal;
+  font-size:clamp(11px,2.5vw,13px);
+  color:var(--gold);
+  letter-spacing:3px;
+  margin-bottom:10px;
+  display:block;
+}
+
+/* ── GAME HEADER ── */
+.game-header {
+  width:100%;
+  background:rgba(10,8,4,0.97);
+  border-bottom:2px solid rgba(200,168,75,0.4);
+  padding:10px clamp(12px,4vw,40px);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:8px;
+  position:sticky;top:0;z-index:50;
+}
+.hud-title { font-family:'Cinzel',serif; font-size:clamp(12px,3vw,18px); color:var(--gold); letter-spacing:2px; }
+.hud-stats { display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+.hud-stat { font-family:'Cinzel',serif; font-size:clamp(10px,2vw,12px); color:var(--dim); letter-spacing:1px; }
+.hud-stat span { color:var(--gold2); font-size:1.3em; }
+
+/* Timer bar */
+.timer-wrap { width:100%; height:5px; background:#0a0804; }
+#timer-bar { height:100%; background:linear-gradient(90deg,var(--amber),var(--gold)); transition:width 1s linear,background 0.3s; width:100%; }
+
+/* ── OSI BOOT PANEL ── */
+#osi-boot {
+  width:100%;
+  background:rgba(5,4,2,0.95);
+  border-bottom:2px solid rgba(200,168,75,0.2);
+  padding:0;
+  overflow:hidden;
+  max-height:0;
+  transition:max-height 0.6s ease, padding 0.3s;
+}
+#osi-boot.open {
+  max-height:200px;
+  padding:14px clamp(12px,4vw,40px);
+}
+
+.osi-grid {
+  display:flex;
+  gap:4px;
+  align-items:stretch;
+  justify-content:center;
+  flex-wrap:nowrap;
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+.osi-grid::-webkit-scrollbar{display:none;}
+
+.osi-block {
+  flex:0 0 auto;
+  width:clamp(52px,12vw,90px);
+  background:rgba(20,14,6,0.9);
+  border:1px solid rgba(200,168,75,0.15);
+  padding:6px 4px;
+  text-align:center;
+  position:relative;
+  transition:all 0.4s;
+}
+.osi-block .osi-num {
+  font-family:'Cinzel',serif;
+  font-size:clamp(13px,2.5vw,22px);
+  color:var(--dim);
+  display:block;
+  line-height:1;
+}
+.osi-block .osi-name {
+  font-size:clamp(7px,1.2vw,10px);
+  color:var(--dim);
+  letter-spacing:0.5px;
+  margin-top:3px;
+  display:block;
+  font-family:'Cinzel',serif;
+}
+.osi-block .osi-glyph {
+  font-size:clamp(12px,2vw,18px);
+  display:block;
+  margin-top:3px;
+  color:var(--dim);
+}
+.osi-block .osi-status {
+  font-size:clamp(6px,1vw,9px);
+  letter-spacing:1px;
+  margin-top:3px;
+  display:block;
+  color:var(--dim);
+  font-family:'Cinzel',serif;
+}
+
+/* States */
+.osi-block.scanning {
+  border-color:var(--amber);
+  background:rgba(224,120,32,0.08);
+  animation:scanPulse 0.6s ease-in-out infinite;
+}
+.osi-block.scanning .osi-num,.osi-block.scanning .osi-name,
+.osi-block.scanning .osi-glyph,.osi-block.scanning .osi-status { color:var(--amber); }
+
+@keyframes scanPulse {
+  0%,100%{box-shadow:0 0 8px rgba(224,120,32,0.4);}
+  50%{box-shadow:0 0 20px rgba(224,120,32,0.8);}
+}
+
+.osi-block.active {
+  border-color:var(--gold);
+  background:rgba(200,168,75,0.1);
+  box-shadow:0 0 15px var(--glow);
+}
+.osi-block.active .osi-num,.osi-block.active .osi-name,
+.osi-block.active .osi-glyph,.osi-block.active .osi-status { color:var(--gold2); }
+.osi-block.active .osi-status::after { content:' ◀ ACTIVE'; }
+
+.osi-block.cleared {
+  border-color:var(--green);
+  background:rgba(74,136,64,0.08);
+}
+.osi-block.cleared .osi-num,.osi-block.cleared .osi-name,
+.osi-block.cleared .osi-glyph { color:var(--green); opacity:0.7; }
+.osi-block.cleared .osi-status { color:var(--green); }
+
+.osi-block.failed {
+  border-color:var(--red);
+  background:rgba(204,34,0,0.08);
+  animation:failShake 0.4s;
+}
+@keyframes failShake { 25%{transform:translateX(-4px);}75%{transform:translateX(4px);} }
+
+/* ── QUESTION AREA ── */
+#screen-game { justify-content:flex-start; padding:0; }
+.game-body { width:100%; max-width:740px; margin:0 auto; padding:clamp(14px,3vw,28px) clamp(14px,4vw,30px); }
+
+.chamber-header {
+  display:flex;
+  align-items:flex-start;
+  gap:16px;
+  margin-bottom:16px;
+}
+.chamber-glyph {
+  font-size:clamp(32px,8vw,52px);
+  line-height:1;
+  filter:drop-shadow(0 0 8px var(--glow));
+  flex-shrink:0;
+}
+.chamber-titles { flex:1; }
+.chamber-badge {
+  font-family:'Cinzel',serif;
+  font-size:10px;
+  letter-spacing:4px;
+  color:var(--dim);
+  margin-bottom:4px;
+}
+.chamber-name {
+  font-family:'Cinzel',serif;
+  font-size:clamp(20px,5vw,36px);
+  font-weight:900;
+  color:var(--gold2);
+  text-shadow:0 0 15px var(--glow);
+  line-height:1.1;
+  margin-bottom:4px;
+}
+.chamber-lore {
+  font-size:clamp(12px,2.5vw,14px);
+  color:#6a5a30;
+  font-style:italic;
+  line-height:1.6;
+}
+
+.question-stone {
+  background:rgba(10,8,4,0.8);
+  border:1px solid rgba(200,168,75,0.25);
+  border-left:4px solid var(--gold);
+  padding:16px 20px;
+  font-size:clamp(14px,3vw,17px);
+  color:var(--text);
+  line-height:1.8;
+  margin-bottom:18px;
+}
+
+.answer-grid {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:10px;
+  margin-bottom:16px;
+}
+
+.ans-btn {
+  background:rgba(20,14,6,0.9);
+  border:1px solid rgba(200,168,75,0.2);
+  color:#a09060;
+  font-family:'Crimson Text',serif;
+  font-size:clamp(13px,2.5vw,16px);
+  padding:clamp(11px,2vw,15px) 16px;
+  cursor:pointer;
+  text-align:left;
+  transition:all 0.2s;
+  line-height:1.5;
+  touch-action:manipulation;
+  position:relative;
+}
+.ans-btn::before { content:'▷ '; color:var(--dim); transition:color 0.2s; }
+.ans-btn:hover { border-color:var(--gold); color:var(--gold2); background:rgba(200,168,75,0.08); transform:translateX(4px); }
+.ans-btn:hover::before { color:var(--gold); }
+.ans-btn.correct { border-color:var(--green); color:#88cc80; background:rgba(74,136,64,0.12); }
+.ans-btn.correct::before { content:'✓ '; color:var(--green); }
+.ans-btn.wrong { border-color:var(--red); color:#cc8080; background:rgba(204,34,0,0.1); animation:shake 0.4s; }
+.ans-btn.wrong::before { content:'✗ '; color:var(--red); }
+@keyframes shake { 25%{transform:translateX(-6px);}75%{transform:translateX(6px);} }
+
+.feedback {
+  padding:14px 18px;
+  font-size:clamp(12px,2.5vw,15px);
+  line-height:1.8;
+  margin-bottom:14px;
+  display:none;
+  border-left:4px solid;
+  font-style:italic;
+}
+.feedback.good { border-color:var(--green); color:#88cc80; background:rgba(74,136,64,0.08); }
+.feedback.bad  { border-color:var(--red);   color:#cc8080; background:rgba(204,34,0,0.08); }
+
+.continue-btn {
+  font-family:'Cinzel',serif;
+  font-size:clamp(13px,2.5vw,16px);
+  padding:11px 32px;
+  background:transparent;
+  border:2px solid var(--gold);
+  color:var(--gold);
+  cursor:pointer;
+  letter-spacing:2px;
+  display:none;
+  transition:all 0.2s;
+  touch-action:manipulation;
+}
+.continue-btn:hover { background:var(--gold); color:#0a0804; box-shadow:0 0 20px var(--glow); }
+
+/* ── LEVEL COMPLETE ── */
+#screen-levelup { text-align:center; background:radial-gradient(ellipse at center, #1e1508 0%, #0a0804 100%); }
+.levelup-title {
+  font-family:'Cinzel',serif;
+  font-size:clamp(26px,7vw,54px);
+  font-weight:900;
+  color:var(--gold);
+  text-shadow:0 0 30px var(--glow);
+  margin-bottom:8px;
+  animation:riseUp 0.8s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes riseUp { from{transform:translateY(30px);opacity:0;}to{transform:translateY(0);opacity:1;} }
+.levelup-sub { font-family:'Cinzel',serif; font-size:clamp(12px,3vw,18px); color:var(--amber); margin-bottom:24px; letter-spacing:2px; }
+.lore-scroll {
+  max-width:520px;
+  font-size:clamp(13px,2.5vw,15px);
+  color:#7a6040;
+  line-height:1.9;
+  margin-bottom:28px;
+  text-align:left;
+  border-top:2px solid var(--gold);
+  border-bottom:2px solid var(--gold);
+  padding:18px 22px;
+  background:rgba(10,8,4,0.6);
+  font-style:italic;
+}
+.score-display { font-family:'Cinzel',serif; font-size:clamp(16px,3vw,24px); color:var(--text); margin-bottom:24px; }
+.score-display span { color:var(--gold2); font-size:1.4em; }
+
+/* ── WIN ── */
+#screen-win { text-align:center; background:radial-gradient(ellipse at center, #1e1508 0%, #0a0804 100%); }
+.win-title { font-family:'Cinzel',serif; font-size:clamp(30px,9vw,70px); font-weight:900; color:var(--gold); text-shadow:0 0 40px var(--glow),0 0 80px rgba(200,168,75,0.3); margin-bottom:8px; animation:goldFlicker 3s infinite; }
+.win-stats { display:flex; gap:20px; justify-content:center; flex-wrap:wrap; margin:20px 0; }
+.win-stat { text-align:center; border:1px solid rgba(200,168,75,0.3); padding:14px 22px; background:rgba(10,8,4,0.6); }
+.win-stat .val { font-family:'Cinzel',serif; font-size:clamp(24px,5vw,38px); color:var(--gold2); display:block; }
+.win-stat .lbl { font-size:10px; letter-spacing:2px; color:var(--dim); margin-top:4px; font-family:'Cinzel',serif; }
+
+/* ── GENERIC BTN ── */
+.big-btn {
+  font-family:'Cinzel',serif;
+  font-size:clamp(12px,3vw,17px);
+  padding:13px 38px;
+  background:transparent;
+  border:2px solid var(--gold);
+  color:var(--gold);
+  cursor:pointer;
+  letter-spacing:2px;
+  transition:all 0.2s;
+  touch-action:manipulation;
+  margin:8px;
+}
+.big-btn:hover { background:var(--gold); color:#0a0804; box-shadow:0 0 25px var(--glow); }
+.big-btn.danger { border-color:var(--red); color:var(--red); }
+.big-btn.danger:hover { background:var(--red); box-shadow:0 0 25px rgba(204,34,0,0.5); }
+.big-btn.success { border-color:var(--green); color:#88cc80; }
+.big-btn.success:hover { background:var(--green); color:#000; }
+
+.gold-divider { display:flex; align-items:center; gap:12px; margin:20px 0; color:var(--dim); font-size:18px; }
+.gold-divider::before,.gold-divider::after { content:''; flex:1; height:1px; background:rgba(200,168,75,0.3); }
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+
+<!-- ══ INTRO ══ -->
+<div class="screen active" id="screen-intro">
+  <div class="intro-eyebrow">CRYPTID ARCADE — NETWORK TRAINING MODULE</div>
+  <div class="game-title">PACKET RUN</div>
+  <div class="game-subtitle">TOMB OF THE STACK</div>
+  <div class="gold-divider">◈</div>
+  <div class="story-scroll">
+    <span class="speaker">DR. LARA NEXIS — FIELD TRANSMISSION</span>
+    "I've found it. Deep beneath the ruins of the old ARPANET bunker — a seven-chambered tomb.
+    Each chamber seals itself around a different layer of the OSI model.
+    The ancients called it <strong style="color:var(--gold);font-style:normal;">The Stack</strong>.<br><br>
+    A hostile intelligence — the locals call it <strong style="color:var(--red);font-style:normal;">VOID.EXE</strong> — has corrupted every chamber.
+    The data relics inside are priceless. Hospital records. Infrastructure maps. The coordinates of something... large. Footprinted.<br><br>
+    I need to guide the packet through all seven chambers. Answer the traps correctly or the packet is lost forever.
+    The tomb does not forgive mistakes."
+  </div>
+  <div style="font-family:'Cinzel',serif;font-size:11px;letter-spacing:3px;color:var(--dim);margin-bottom:20px;">3 TOMBS · 7 CHAMBERS EACH · TIMED TRIALS</div>
+  <button class="big-btn" onclick="startGame()">ENTER THE TOMB</button>
+</div>
+
+<!-- ══ GAME ══ -->
+<div class="screen" id="screen-game">
+  <div class="game-header">
+    <div class="hud-title">⚒ PACKET RUN</div>
+    <div class="hud-stats">
+      <div class="hud-stat">TOMB <span id="hud-level">I</span></div>
+      <div class="hud-stat">RELICS <span id="hud-score">0</span></div>
+      <div class="hud-stat">LIVES <span id="hud-lives">♦♦♦</span></div>
+      <div class="hud-stat">TIME <span id="hud-time">15</span></div>
+    </div>
+  </div>
+  <div class="timer-wrap"><div id="timer-bar"></div></div>
+
+  <!-- OSI BOOT PANEL -->
+  <div id="osi-boot">
+    <div class="osi-grid" id="osi-grid"></div>
+  </div>
+
+  <div class="game-body">
+    <div class="chamber-header">
+      <div class="chamber-glyph" id="chamber-glyph">🏛</div>
+      <div class="chamber-titles">
+        <div class="chamber-badge" id="chamber-badge">CHAMBER 7</div>
+        <div class="chamber-name" id="chamber-name">Application</div>
+        <div class="chamber-lore" id="chamber-lore"></div>
+      </div>
+    </div>
+    <div class="question-stone" id="question-text"></div>
+    <div class="answer-grid" id="answer-grid"></div>
+    <div class="feedback" id="feedback"></div>
+    <button class="continue-btn" id="continue-btn" onclick="nextQuestion()">PRESS DEEPER →</button>
+  </div>
+</div>
+
+<!-- ══ LEVEL COMPLETE ══ -->
+<div class="screen" id="screen-levelup">
+  <div class="levelup-title" id="levelup-title">TOMB CLEARED</div>
+  <div class="levelup-sub" id="levelup-sub">All seven chambers sealed.</div>
+  <div class="lore-scroll" id="levelup-story"></div>
+  <div class="score-display">Relics recovered: <span id="levelup-score">0</span></div>
+  <button class="big-btn success" id="levelup-btn" onclick="nextLevel()">DESCEND DEEPER →</button>
+</div>
+
+<!-- ══ WIN ══ -->
+<div class="screen" id="screen-win">
+  <div class="intro-eyebrow">TRANSMISSION SECURED</div>
+  <div class="win-title">RELIC RECOVERED</div>
+  <div class="gold-divider">◈</div>
+  <div class="story-scroll" style="text-align:left;margin-bottom:20px;">
+    <span class="speaker">DR. LARA NEXIS — FINAL LOG</span>
+    "All three tombs. Every chamber. VOID.EXE has been purged from the stack.
+    The data relics are secure. The hospital records are safe. The infrastructure maps — returned to their rightful custodians.<br><br>
+    As for the coordinates of the large footprinted creature... I've decided some discoveries are better left encrypted.
+    The tomb is sealed. The packet is delivered.<br><br>
+    The stack endures."
+  </div>
+  <div class="win-stats">
+    <div class="win-stat"><span class="val" id="win-score">0</span><div class="lbl">TOTAL RELICS</div></div>
+    <div class="win-stat"><span class="val" id="win-correct">0</span><div class="lbl">CHAMBERS SOLVED</div></div>
+    <div class="win-stat"><span class="val" id="win-time">0</span><div class="lbl">TIME BONUS</div></div>
+  </div>
+  <button class="big-btn" onclick="restartGame()">RAID AGAIN</button>
+  <button class="big-btn danger" onclick="location.href='games-main.html'">EXIT TOMB</button>
+</div>
+
+<script>
+// ── PARTICLE BG ──
+const canvas = document.getElementById('bg');
+const ctx = canvas.getContext('2d');
+let particles = [];
+function initBG() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  particles = Array.from({length:80}, () => ({
+    x: Math.random()*canvas.width,
+    y: Math.random()*canvas.height,
+    size: Math.random()*1.5+0.3,
+    speed: Math.random()*0.3+0.05,
+    opacity: Math.random()*0.4+0.1
+  }));
+}
+function animateBG() {
+  ctx.fillStyle = '#0a0804';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  particles.forEach(p => {
+    ctx.fillStyle = `rgba(200,168,75,${p.opacity})`;
+    ctx.fillRect(p.x,p.y,p.size,p.size);
+    p.y -= p.speed;
+    if(p.y < 0) { p.y = canvas.height; p.x = Math.random()*canvas.width; }
+  });
+  requestAnimationFrame(animateBG);
+}
+initBG(); animateBG();
+window.addEventListener('resize', initBG);
+
+// ── OSI CONFIG ──
+const OSI_LAYERS = [
+  {num:7, name:'Application',  glyph:'🌐', code:'APP'},
+  {num:6, name:'Presentation', glyph:'🔐', code:'PRES'},
+  {num:5, name:'Session',      glyph:'🤝', code:'SESS'},
+  {num:4, name:'Transport',    glyph:'📦', code:'TRANS'},
+  {num:3, name:'Network',      glyph:'🗺', code:'NET'},
+  {num:2, name:'Data Link',    glyph:'🔗', code:'DLINK'},
+  {num:1, name:'Physical',     glyph:'⚡', code:'PHYS'},
+];
+
+const ROMAN = ['I','II','III'];
+
+// ── QUESTIONS ──
+const levels = [
+  {
+    name:"TOMB OF ARPANET", roman:"I",
+    intro:"The oldest tomb. VOID.EXE has infected the corporate network. Seven traps seal the passage.",
+    outro:"The first seal is broken. Dust falls from the ceiling. The packet survives. But deeper tombs await — and VOID.EXE has retreated to the city infrastructure grid.",
+    timeLimit:15,
+    questions:[
+      {layer:7,glyph:'🌐',lore:"A carved inscription reads: 'Only the correct protocol may open this gate.'",
+       q:"A user requests a secure web page. Which protocol handles this at Layer 7?",
+       answers:["HTTP","HTTPS","FTP","SMTP"], correct:1,
+       fb:{g:"The gate groans open. HTTPS encrypts the connection before transmission.",b:"The gate seals shut. HTTP transmits in plaintext — VOID.EXE intercepts the packet."}},
+      {layer:6,glyph:'🔐',lore:"The chamber smells of burning cipher-wax. Unencrypted data will not pass the guardian.",
+       q:"Which encryption standard should you apply to protect the packet at Layer 6?",
+       answers:["Base64 encoding","TLS 1.3","Caesar cipher","ROT13"], correct:1,
+       fb:{g:"The guardian steps aside. TLS 1.3 seals the payload — VOID.EXE cannot read it.",b:"A trap fires from the wall. That is not real encryption. The packet's contents are exposed."}},
+      {layer:5,glyph:'🤝',lore:"Stone hands carved into the walls. The correct handshake opens the door.",
+       q:"What is the correct TCP three-way handshake order?",
+       answers:["ACK → SYN → SYN-ACK","SYN → SYN-ACK → ACK","SYN-ACK → SYN → ACK","ACK → ACK → SYN"], correct:1,
+       fb:{g:"The stone hands clasp together. Session established. VOID.EXE's fake tokens rejected.",b:"The hands reject the sequence. The session is vulnerable to hijacking."}},
+      {layer:4,glyph:'📦',lore:"Two paths. One is reliable. One is fast. The relic cannot afford to be lost.",
+       q:"Which transport protocol guarantees reliable, ordered delivery with error checking?",
+       answers:["UDP","ICMP","TCP","GRE"], correct:2,
+       fb:{g:"The reliable path opens. TCP checksums active. The packet will not be lost.",b:"Speed without reliability. Packets could drop or arrive in disorder. The relic is at risk."}},
+      {layer:3,glyph:'🗺',lore:"A routing table etched in stone. Many paths. Only one leads to 192.168.1.55.",
+       q:"Which subnet does the IP address 192.168.1.55 belong to?",
+       answers:["10.0.0.0/8","172.16.0.0/12","192.168.1.0/24","192.168.0.0/16"], correct:2,
+       fb:{g:"The correct passage revealed. Packet routed to the right segment.",b:"A dead end. Wrong subnet — the packet is dropped at the gateway."}},
+      {layer:2,glyph:'🔗',lore:"Ghostly frames flicker on the walls. VOID.EXE is forging MAC identities.",
+       q:"Which frame type does ARP spoofing exploit?",
+       answers:["IP frames","Ethernet frames","TCP segments","UDP datagrams"], correct:1,
+       fb:{g:"The false frames shatter. Ethernet ARP defense engaged.",b:"VOID.EXE's ghost slips through. ARP spoofing operates within Ethernet frames."}},
+      {layer:1,glyph:'⚡',lore:"The deepest chamber hums with interference. The physical signal must be pure.",
+       q:"Which cable type is most resistant to electromagnetic interference?",
+       answers:["Coaxial","UTP","Fiber Optic","STP"], correct:2,
+       fb:{g:"Light pierces the darkness. Fiber optic carries pure signal — EMI cannot touch it.",b:"The interference swallows the signal. That cable type is vulnerable to VOID.EXE's field."}}
+    ]
+  },
+  {
+    name:"TOMB OF THE GRID", roman:"II",
+    intro:"Deeper ruins. VOID.EXE has moved into the city's infrastructure — utilities, traffic, emergency services. The traps are faster now.",
+    outro:"The city grid is secured. VOID.EXE fragments — scattering to the deep net. One final tomb remains. The relic is close.",
+    timeLimit:12,
+    questions:[
+      {layer:7,glyph:'🌐',lore:"DNS glyphs on the walls flicker and change. The addresses are being forged.",
+       q:"Which attack involves forging DNS responses to redirect users to malicious servers?",
+       answers:["SQL Injection","DNS Spoofing","Cross-Site Scripting","Buffer Overflow"], correct:1,
+       fb:{g:"The glyphs stabilize. DNS Spoofing neutralized — true addresses restored.",b:"The wrong trap triggered. VOID.EXE's DNS poison continues to spread."}},
+      {layer:6,glyph:'🔐',lore:"A pedestal holds encoded data. The inscription warns: encoding is not encryption.",
+       q:"What does Base64 encoding do to data?",
+       answers:["Encrypts it with a key","Compresses it","Encodes binary as ASCII text","Hashes it irreversibly"], correct:2,
+       fb:{g:"Correct. Base64 changes format only — it is easily reversed. Never mistake it for security.",b:"Base64 provides no secrecy. Anyone with the text can decode it instantly."}},
+      {layer:5,glyph:'🤝',lore:"A locked door with a fixed session ID carved above it. VOID.EXE has poisoned the lock.",
+       q:"What is the best defense against session fixation attacks?",
+       answers:["Use longer passwords","Regenerate session ID after login","Block all cookies","Use UDP instead of TCP"], correct:1,
+       fb:{g:"New session carved into the stone. Fixation attack failed.",b:"The poisoned ID remains. VOID.EXE holds the session open."}},
+      {layer:4,glyph:'📦',lore:"A flood of half-open connections fills the antechamber. The server cannot breathe.",
+       q:"A SYN flood attack exploits which protocol mechanism?",
+       answers:["UDP broadcast","TCP three-way handshake","ICMP echo requests","HTTP GET requests"], correct:1,
+       fb:{g:"The flood is named. SYN floods exhaust the half-open connection table. Defense deployed.",b:"The wrong trap. The half-open table fills. The server slows."}},
+      {layer:3,glyph:'🗺',lore:"ICMP echoes bounce off the walls, amplified by the chamber's shape. A Smurf attack.",
+       q:"What does a Smurf attack use to amplify its DDoS traffic?",
+       answers:["DNS queries","ICMP echo to broadcast addresses","TCP SYN packets","ARP broadcasts"], correct:1,
+       fb:{g:"The echoes silenced. Broadcast ICMP amplification identified and blocked.",b:"Smurf attacks specifically abuse ICMP sent to broadcast addresses. The flood grows."}},
+      {layer:2,glyph:'🔗',lore:"The switch's memory is filling with false MAC addresses. Hub mode incoming.",
+       q:"What security feature limits the number of MAC addresses per switch port?",
+       answers:["VLANs","Port Security","Spanning Tree Protocol","802.1X"], correct:1,
+       fb:{g:"Port Security activated. MAC flood stopped at the interface.",b:"That does not limit MAC addresses per port. The flood continues."}},
+      {layer:1,glyph:'⚡',lore:"A hooded figure crouches near the fiber runs. Physical intrusion detected.",
+       q:"Which control is most effective for detecting unauthorized server room access?",
+       answers:["Strong passwords","Biometric access logs","Firewall rules","VPN tunnels"], correct:1,
+       fb:{g:"Biometric log captures the intruder. Identity recorded. Physical breach contained.",b:"Logical controls cannot stop a physical intruder. The fiber has been tapped."}}
+    ]
+  },
+  {
+    name:"TOMB OF THE CORE", roman:"III",
+    intro:"The deepest chamber. VOID.EXE's final stronghold — the backbone of everything. Ten seconds per question. No mercy.",
+    outro:"VOID.EXE has been purged from all three tombs. The stack is clean. The relic is yours.",
+    timeLimit:10,
+    questions:[
+      {layer:7,glyph:'🌐',lore:"An input field carved in stone with the inscription: '; DROP TABLE souls; --",
+       q:"An attacker enters `'; DROP TABLE users; --` into a login form. What attack is this?",
+       answers:["XSS Attack","SQL Injection","Buffer Overflow","CSRF"], correct:1,
+       fb:{g:"SQL Injection sealed. Parameterized queries carve new protections into the wall.",b:"Look at the SQL syntax. VOID.EXE is injecting commands directly into the database."}},
+      {layer:6,glyph:'🔐',lore:"The tomb forces older protocols. VOID.EXE is pushing a downgrade.",
+       q:"Which TLS version should you enforce to prevent protocol downgrade attacks?",
+       answers:["SSL 2.0","SSL 3.0","TLS 1.0","TLS 1.3"], correct:3,
+       fb:{g:"TLS 1.3 enforced. Older versions rejected. VOID.EXE's downgrade blocked.",b:"That version has known vulnerabilities. VOID.EXE exploits the weakness immediately."}},
+      {layer:5,glyph:'🤝',lore:"A shadow intercepts every message passed through the chamber. MITM detected.",
+       q:"Which mechanism best prevents man-in-the-middle attacks on web sessions?",
+       answers:["HTTP cookies","HTTPS with certificate pinning","Longer session timeouts","CAPTCHA"], correct:1,
+       fb:{g:"Certificate pinning rejects the fake certificate. VOID.EXE's intercept fails.",b:"Server identity is unverified. VOID.EXE substitutes its own certificate."}},
+      {layer:4,glyph:'📦',lore:"The packet arrives in fragments — deliberately split to fool the inspection wards.",
+       q:"What tool is best suited to reassemble and inspect fragmented packets?",
+       answers:["Basic firewall","Intrusion Detection System (IDS)","Antivirus","DNS filter"], correct:1,
+       fb:{g:"IDS reassembles fragments. VOID.EXE's bypass attempt detected and blocked.",b:"That tool cannot reassemble deep packet streams. Fragmented attack passes through."}},
+      {layer:3,glyph:'🗺',lore:"BGP routes carved into the walls are shifting. False paths appear to lead everywhere.",
+       q:"Which technology helps prevent BGP route hijacking?",
+       answers:["NAT","RPKI","DHCP snooping","802.1Q tagging"], correct:1,
+       fb:{g:"RPKI validates route origin. VOID.EXE's fake announcements rejected at the border.",b:"RPKI is the specific control for BGP validation. The hijack route propagates."}},
+      {layer:2,glyph:'🔗',lore:"VOID.EXE negotiates a trunk link where none should exist. VLAN walls are falling.",
+       q:"What configuration prevents VLAN hopping via switch spoofing?",
+       answers:["Enable DTP on all ports","Disable DTP, set native VLAN to unused","Use default VLAN 1","Enable all VLANs on trunks"], correct:1,
+       fb:{g:"DTP disabled. VOID.EXE cannot negotiate trunk links. VLANs hold their walls.",b:"That enables VLAN hopping. VOID.EXE now traverses all network segments freely."}},
+      {layer:1,glyph:'⚡',lore:"The final trap. The power conduits pulse erratically. A cascade failure incoming.",
+       q:"Which component protects servers from power instability and enables graceful shutdown?",
+       answers:["RAID array","Firewall appliance","UPS (Uninterruptible Power Supply)","Load balancer"], correct:2,
+       fb:{g:"UPS engaged. VOID.EXE's power attack absorbed. All systems remain online. The stack holds.",b:"Power surges hit unprotected hardware. Cascade failure cascades. The stack falls dark."}}
+    ]
+  }
+];
+
+// ── STATE ──
+let currentLevel=0, currentQ=0, score=0, lives=3, timerInterval=null, timeLeft=15, timeBonus=0, totalCorrect=0, answered=false;
+
+// ── HELPERS ──
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function updateHUD() {
+  document.getElementById('hud-level').textContent = ROMAN[currentLevel]||'I';
+  document.getElementById('hud-score').textContent = score;
+  const h=['♦♦♦','♦♦','♦','💀'];
+  document.getElementById('hud-lives').textContent = lives>0?(h[3-lives]||'♦'):'💀';
+}
+
+// ── OSI BOOT SEQUENCE ──
+function buildOSI() {
+  const grid = document.getElementById('osi-grid');
+  grid.innerHTML = '';
+  OSI_LAYERS.forEach((l,i) => {
+    const div = document.createElement('div');
+    div.className = 'osi-block';
+    div.id = 'osi-' + l.num;
+    div.innerHTML = `
+      <span class="osi-num">${l.num}</span>
+      <span class="osi-glyph">${l.glyph}</span>
+      <span class="osi-name">${l.name}</span>
+      <span class="osi-status" id="osistat-${l.num}">SEALED</span>
+    `;
+    grid.appendChild(div);
+  });
+}
+
+function bootOSI(activeLayer, clearedLayers, failedLayers=[]) {
+  const boot = document.getElementById('osi-boot');
+  boot.classList.remove('open');
+
+  // Reset all
+  OSI_LAYERS.forEach(l => {
+    const el = document.getElementById('osi-'+l.num);
+    if(!el) return;
+    el.className = 'osi-block';
+    document.getElementById('osistat-'+l.num).textContent = 'SEALED';
+  });
+
+  // Scan animation then settle
+  let scanIdx = 0;
+  const scanOrder = [7,6,5,4,3,2,1];
+
+  boot.classList.add('open');
+
+  function scanNext() {
+    if(scanIdx < scanOrder.length) {
+      const lnum = scanOrder[scanIdx];
+      const el = document.getElementById('osi-'+lnum);
+      if(el) el.classList.add('scanning');
+      setTimeout(() => {
+        if(el) el.classList.remove('scanning');
+        // Set final state
+        if(failedLayers.includes(lnum)) {
+          el.classList.add('failed');
+          document.getElementById('osistat-'+lnum).textContent = 'CORRUPT';
+        } else if(clearedLayers.includes(lnum)) {
+          el.classList.add('cleared');
+          document.getElementById('osistat-'+lnum).textContent = 'CLEARED';
+        } else if(lnum === activeLayer) {
+          el.classList.add('active');
+          document.getElementById('osistat-'+lnum).textContent = 'ACTIVE';
+        } else {
+          document.getElementById('osistat-'+lnum).textContent = 'SEALED';
+        }
+        scanIdx++;
+        setTimeout(scanNext, 60);
+      }, 180);
+    }
+  }
+  setTimeout(scanNext, 100);
+}
+
+// ── GAME FLOW ──
+function startGame() {
+  currentLevel=0; score=0; lives=3; timeBonus=0; totalCorrect=0;
+  startLevel();
+}
+function restartGame() { startGame(); }
+
+function startLevel() {
+  currentQ=0;
+  buildOSI();
+  updateHUD();
+  showScreen('screen-game');
+  loadQuestion();
+}
+
+function loadQuestion() {
+  const level = levels[currentLevel];
+  const qData = level.questions[currentQ];
+  answered = false;
+
+  // Which layers are cleared
+  const cleared = level.questions.slice(0,currentQ).map(q=>q.layer);
+  bootOSI(qData.layer, cleared);
+
+  document.getElementById('chamber-glyph').textContent = qData.glyph;
+  document.getElementById('chamber-badge').textContent = `CHAMBER ${qData.layer} — ${level.name}`;
+  document.getElementById('chamber-name').textContent = OSI_LAYERS.find(l=>l.num===qData.layer)?.name||'';
+  document.getElementById('chamber-lore').textContent = qData.lore;
+  document.getElementById('question-text').textContent = qData.q;
+
+  const grid = document.getElementById('answer-grid');
+  grid.innerHTML = '';
+  qData.answers.forEach((ans,i) => {
+    const btn = document.createElement('button');
+    btn.className = 'ans-btn';
+    btn.textContent = ans;
+    btn.onclick = () => submitAnswer(i);
+    grid.appendChild(btn);
+  });
+
+  document.getElementById('feedback').style.display = 'none';
+  document.getElementById('continue-btn').style.display = 'none';
+
+  startTimer(level.timeLimit);
+}
+
+function startTimer(limit) {
+  clearInterval(timerInterval);
+  timeLeft = limit;
+  document.getElementById('hud-time').textContent = timeLeft;
+  const bar = document.getElementById('timer-bar');
+  bar.style.transition = 'none';
+  bar.style.width = '100%';
+  bar.style.background = 'linear-gradient(90deg,var(--amber),var(--gold))';
+  setTimeout(() => { bar.style.transition = 'width 1s linear, background 0.3s'; }, 50);
+
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    document.getElementById('hud-time').textContent = timeLeft;
+    const pct = (timeLeft/limit)*100;
+    bar.style.width = pct+'%';
+    if(pct<30) bar.style.background='linear-gradient(90deg,#660000,#cc2200)';
+    else if(pct<55) bar.style.background='linear-gradient(90deg,#804010,var(--amber))';
+    if(timeLeft<=0) { clearInterval(timerInterval); if(!answered) timeExpired(); }
+  }, 1000);
+}
+
+function timeExpired() {
+  answered=true; lives--; updateHUD();
+  const qData = levels[currentLevel].questions[currentQ];
+  // Flash failed on OSI
+  const el = document.getElementById('osi-'+qData.layer);
+  if(el){el.classList.remove('active','scanning');el.classList.add('failed');}
+  document.getElementById('osistat-'+qData.layer).textContent='TIMEOUT';
+  showFeedback(false,`⏱ The trap triggered. Correct answer: ${qData.answers[qData.correct]}`);
+  document.getElementById('continue-btn').style.display='inline-block';
+  if(lives<=0){setTimeout(showGameOver,1800);}
+}
+
+function submitAnswer(idx) {
+  if(answered)return;
+  clearInterval(timerInterval);
+  answered=true;
+  const qData = levels[currentLevel].questions[currentQ];
+  const btns = document.querySelectorAll('.ans-btn');
+  btns.forEach(b=>b.style.pointerEvents='none');
+
+  const osiEl = document.getElementById('osi-'+qData.layer);
+  const osiStat = document.getElementById('osistat-'+qData.layer);
+
+  if(idx===qData.correct){
+    btns[idx].classList.add('correct');
+    const bonus = Math.ceil(timeLeft*10);
+    score+=100+bonus; timeBonus+=bonus; totalCorrect++;
+    updateHUD();
+    if(osiEl){osiEl.classList.remove('active','scanning');osiEl.classList.add('cleared');}
+    if(osiStat)osiStat.textContent='CLEARED';
+    showFeedback(true,'⚒ '+qData.fb.g);
+  } else {
+    btns[idx].classList.add('wrong');
+    btns[qData.correct].classList.add('correct');
+    lives--; updateHUD();
+    if(osiEl){osiEl.classList.remove('active','scanning');osiEl.classList.add('failed');}
+    if(osiStat)osiStat.textContent='CORRUPT';
+    showFeedback(false,'💀 '+qData.fb.b);
+    if(lives<=0){setTimeout(showGameOver,1800);return;}
+  }
+  document.getElementById('continue-btn').style.display='inline-block';
+}
+
+function showFeedback(good,text){
+  const fb=document.getElementById('feedback');
+  fb.className='feedback '+(good?'good':'bad');
+  fb.textContent=text;
+  fb.style.display='block';
+}
+
+function nextQuestion(){
+  currentQ++;
+  if(currentQ>=levels[currentLevel].questions.length) showLevelComplete();
+  else loadQuestion();
+}
+
+function showLevelComplete(){
+  clearInterval(timerInterval);
+  const level=levels[currentLevel];
+  document.getElementById('levelup-title').textContent=level.name+' — SEALED';
+  document.getElementById('levelup-sub').textContent='All seven chambers cleared. The relic advances.';
+  document.getElementById('levelup-story').textContent=level.outro;
+  document.getElementById('levelup-score').textContent=score;
+  const btn=document.getElementById('levelup-btn');
+  if(currentLevel>=levels.length-1){
+    btn.textContent='CLAIM THE RELIC →';
+    btn.onclick=showWin;
+  } else {
+    btn.textContent='DESCEND DEEPER →';
+    btn.onclick=nextLevel;
+  }
+  showScreen('screen-levelup');
+}
+
+function nextLevel(){currentLevel++;startLevel();}
+
+function showWin(){
+  document.getElementById('win-score').textContent=score;
+  document.getElementById('win-correct').textContent=totalCorrect;
+  document.getElementById('win-time').textContent=timeBonus;
+  showScreen('screen-win');
+}
+
+function showGameOver(){
+  clearInterval(timerInterval);
+  const body=document.querySelector('.game-body');
+  body.innerHTML=`
+    <div style="text-align:center;padding:50px 0;">
+      <div style="font-family:'Cinzel',serif;font-size:clamp(28px,7vw,52px);color:var(--red);text-shadow:0 0 20px rgba(204,34,0,0.6);margin-bottom:12px;font-weight:900;">THE TOMB CLAIMS YOU</div>
+      <div style="color:var(--dim);font-size:16px;margin-bottom:8px;font-style:italic;">"The packet is lost. VOID.EXE consumes the relic."</div>
+      <div style="color:#3a2a10;font-family:'Cinzel',serif;font-size:13px;letter-spacing:2px;margin-bottom:30px;">RELICS RECOVERED: ${score}</div>
+      <button class="big-btn" onclick="startGame()">ATTEMPT AGAIN</button>
+      <button class="big-btn danger" onclick="location.href='games-main.html'" style="margin-top:8px;">FLEE THE TOMB</button>
+    </div>
+  `;
+}
+</script>
+</body>
+</html>
