@@ -3,20 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Katt Slade | Privacy & Network Security</title>
-
+<title>Katt Slade</title>
 <link href="https://fonts.googleapis.com/css2?family=Shrikhand&family=Syne+Mono&display=swap" rel="stylesheet">
-
 <style>
   :root {
-    --red: #ff2a2a;
-    --red-dim: rgba(255,42,42,0.15);
-    --red-glow: rgba(255,42,42,0.4);
-    --bg: #090909;
-    --bg2: #111;
-    --border: rgba(255,42,42,0.25);
-    --text: #ccc;
-    --text-dim: #555;
+    --purple: #9b30ff;
+    --purple-dim: rgba(155,48,255,0.15);
+    --purple-glow: rgba(155,48,255,0.5);
+    --purple-dark: rgba(155,48,255,0.08);
+    --green: #00ff41;
+    --green-dim: rgba(0,255,65,0.15);
+    --bg: #020805;
+    --rain: rgba(0,255,65,0.12);
+    --text: #c0ffc0;
+    --text-dim: #3a6640;
+    --card-bg: rgba(4,12,8,0.97);
+    --border: rgba(0,255,65,0.2);
   }
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -25,304 +27,447 @@
     font-family: 'Syne Mono', monospace;
     background: var(--bg);
     color: var(--text);
-    line-height: 1.7;
-    overflow-x: hidden;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 20px;
   }
 
-  /* Subtle scanline overlay */
-  body::after {
-    content: '';
+  /* ── MATRIX RAIN CANVAS ── */
+  canvas {
     position: fixed;
-    inset: 0;
-    background: repeating-linear-gradient(
-      to bottom,
-      transparent,
-      transparent 3px,
-      rgba(0,0,0,0.1) 3px,
-      rgba(0,0,0,0.1) 4px
-    );
-    pointer-events: none;
-    z-index: 100;
+    top: 0; left: 0;
+    z-index: 0;
+    opacity: 1;
   }
 
-  /* ── HEADER ── */
-  header {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: clamp(50px, 10vh, 100px) clamp(20px, 5vw, 60px) clamp(30px, 6vh, 60px);
+  /* ── CARD ── */
+  .card-wrap {
     position: relative;
+    z-index: 10;
+    width: min(420px, 96vw);
+    animation: cardFloat 6s ease-in-out infinite;
   }
 
-  .header-label {
-    font-size: 11px;
-    letter-spacing: 4px;
-    color: var(--red);
-    margin-bottom: 16px;
-    opacity: 0.8;
-  }
-
-  h1 {
-    font-family: 'Shrikhand', cursive;
-    font-size: clamp(52px, 12vw, 110px);
-    color: var(--red);
-    text-shadow: 0 0 30px var(--red-glow), 0 0 60px rgba(255,42,42,0.2);
-    line-height: 1;
-    margin-bottom: 20px;
-    animation: titleFlicker 6s ease-in-out infinite;
-  }
-
-  @keyframes titleFlicker {
-    0%, 100% { opacity: 1; text-shadow: 0 0 30px var(--red-glow), 0 0 60px rgba(255,42,42,0.2); }
-    92% { opacity: 1; }
-    93% { opacity: 0.6; text-shadow: none; }
-    94% { opacity: 1; }
-    97% { opacity: 0.8; }
-    98% { opacity: 1; }
-  }
-
-  .tagline {
-    font-family: 'Shrikhand', cursive;
-    font-size: clamp(16px, 4vw, 26px);
-    color: #fff;
-    margin-bottom: 12px;
-    letter-spacing: 1px;
-  }
-
-  .tagline span {
-    color: var(--red);
-  }
-
-  .header-desc {
-    font-size: clamp(12px, 2.5vw, 14px);
-    color: var(--text-dim);
-    max-width: 480px;
-    line-height: 1.8;
-  }
-
-  /* Red divider line */
-  .divider {
-    width: 60px;
-    height: 3px;
-    background: var(--red);
-    margin: 24px 0;
-    box-shadow: 0 0 10px var(--red-glow);
-  }
-
-  /* ── MAIN CONTAINER ── */
-  .container {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 0 clamp(20px, 5vw, 60px) 80px;
-  }
-
-  /* ── SECTIONS ── */
-  section {
-    margin-bottom: clamp(50px, 8vh, 80px);
-  }
-
-  h2 {
-    font-family: 'Shrikhand', cursive;
-    font-size: clamp(22px, 5vw, 34px);
-    color: var(--red);
-    text-shadow: 0 0 15px var(--red-glow);
-    margin-bottom: 24px;
-    letter-spacing: 1px;
-  }
-
-  p {
-    font-size: clamp(13px, 2.5vw, 15px);
-    color: var(--text);
-    max-width: 620px;
-    line-height: 1.9;
-  }
-
-  /* ── CARDS ── */
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 16px;
+  @keyframes cardFloat {
+    0%,100% { transform: translateY(0px); }
+    50%      { transform: translateY(-8px); }
   }
 
   .card {
-    border: 1px solid var(--border);
-    padding: 22px;
-    background: var(--bg2);
-    transition: all 0.25s ease;
+    background: var(--card-bg);
+    border: 1px solid rgba(0,255,65,0.25);
+    box-shadow:
+      0 0 0 1px rgba(155,48,255,0.1),
+      0 0 30px rgba(0,255,65,0.08),
+      0 0 60px rgba(155,48,255,0.06),
+      inset 0 0 40px rgba(0,0,0,0.5);
     position: relative;
     overflow: hidden;
   }
 
-  .card::before {
+  /* Corner runes */
+  .card::before, .card::after {
     content: '';
     position: absolute;
-    top: 0; left: 0;
-    width: 3px;
-    height: 100%;
-    background: var(--red);
-    opacity: 0;
-    transition: opacity 0.25s;
+    width: 16px; height: 16px;
+    border-color: var(--purple);
+    border-style: solid;
+    z-index: 2;
+  }
+  .card::before { top: 10px; left: 10px; border-width: 2px 0 0 2px; }
+  .card::after  { bottom: 10px; right: 10px; border-width: 0 2px 2px 0; }
+
+  /* Scanlines */
+  .card-scanlines {
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.15) 2px,
+      rgba(0,0,0,0.15) 4px
+    );
+    pointer-events: none;
+    z-index: 3;
   }
 
-  .card:hover {
-    border-color: var(--red);
-    background: var(--red-dim);
-    transform: translateX(4px);
-    box-shadow: 0 0 20px var(--red-glow);
+  /* ── CARD TOP BAR ── */
+  .card-topbar {
+    border-bottom: 1px solid rgba(0,255,65,0.15);
+    padding: 10px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    z-index: 4;
   }
 
-  .card:hover::before {
-    opacity: 1;
-  }
-
-  .card strong {
-    display: block;
-    font-family: 'Shrikhand', cursive;
-    font-size: clamp(14px, 3vw, 17px);
-    color: #fff;
-    margin-bottom: 8px;
-    letter-spacing: 0.5px;
-  }
-
-  .card p {
-    font-size: clamp(12px, 2.5vw, 13px);
+  .card-id {
+    font-size: 10px;
+    letter-spacing: 3px;
     color: var(--text-dim);
-    line-height: 1.7;
-    max-width: none;
   }
 
-  /* ── LINKS / CONNECT ── */
-  .links-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 12px;
+  .card-type {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--purple);
+    opacity: 0.8;
   }
 
-  .link-card {
-    border: 1px solid var(--border);
-    padding: 16px 20px;
-    background: var(--bg2);
-    cursor: pointer;
-    transition: all 0.2s;
-    text-decoration: none;
-    display: block;
+  /* ── TRIANGLE ── */
+  .triangle-wrap {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 28px 20px 16px;
+    position: relative;
+    z-index: 4;
   }
 
-  .link-card:hover {
-    border-color: var(--red);
-    background: var(--red-dim);
-    box-shadow: 0 0 15px var(--red-glow);
+  .triangle-svg {
+    width: clamp(100px, 28vw, 140px);
+    height: auto;
+    filter: drop-shadow(0 0 12px var(--purple)) drop-shadow(0 0 28px rgba(155,48,255,0.4));
+    animation: triPulse 3s ease-in-out infinite;
   }
 
-  .link-card span {
+  @keyframes triPulse {
+    0%,100% { filter: drop-shadow(0 0 10px var(--purple)) drop-shadow(0 0 24px rgba(155,48,255,0.3)); }
+    50%      { filter: drop-shadow(0 0 20px var(--purple)) drop-shadow(0 0 50px rgba(155,48,255,0.6)); }
+  }
+
+  /* ── NAME BLOCK ── */
+  .card-name-block {
+    text-align: center;
+    padding: 0 20px 16px;
+    position: relative;
+    z-index: 4;
+  }
+
+  .card-name {
     font-family: 'Shrikhand', cursive;
-    font-size: clamp(14px, 3vw, 16px);
+    font-size: clamp(36px, 10vw, 56px);
     color: #fff;
-    letter-spacing: 0.5px;
+    line-height: 1;
+    margin-bottom: 6px;
+    text-shadow: 0 0 20px rgba(155,48,255,0.6), 0 0 40px rgba(155,48,255,0.2);
   }
 
-  .link-card .link-arrow {
-    color: var(--red);
-    margin-left: 6px;
-    transition: transform 0.2s;
-    display: inline-block;
+  .card-role {
+    font-size: clamp(9px, 2vw, 11px);
+    letter-spacing: 4px;
+    color: var(--purple);
+    margin-bottom: 4px;
   }
 
-  .link-card:hover .link-arrow {
-    transform: translateX(4px);
+  .card-tagline {
+    font-size: clamp(9px, 2vw, 10px);
+    letter-spacing: 2px;
+    color: var(--text-dim);
   }
 
-  /* ── FOOTER ── */
-  footer {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 30px clamp(20px, 5vw, 60px) 50px;
-    border-top: 1px solid var(--border);
-    font-size: 12px;
+  /* ── DIVIDER ── */
+  .card-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(155,48,255,0.4), rgba(0,255,65,0.3), transparent);
+    margin: 0 20px;
+    position: relative;
+    z-index: 4;
+  }
+
+  /* ── STATS BLOCK ── */
+  .card-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: rgba(0,255,65,0.08);
+    border-top: 1px solid rgba(0,255,65,0.1);
+    border-bottom: 1px solid rgba(0,255,65,0.1);
+    margin: 16px 0 0;
+    position: relative;
+    z-index: 4;
+  }
+
+  .stat-cell {
+    background: var(--card-bg);
+    padding: 12px 16px;
+  }
+
+  .stat-cell:nth-child(odd) { border-right: 1px solid rgba(0,255,65,0.08); }
+
+  .stat-label {
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+
+  .stat-value {
+    font-size: clamp(11px, 2.5vw, 13px);
+    color: var(--green);
+    line-height: 1.4;
+  }
+
+  .stat-value.purple { color: var(--purple); }
+
+  /* ── ABILITY BLOCK ── */
+  .card-ability {
+    padding: 14px 18px;
+    border-bottom: 1px solid rgba(0,255,65,0.08);
+    position: relative;
+    z-index: 4;
+    background: var(--purple-dark);
+  }
+
+  .ability-label {
+    font-size: 9px;
+    letter-spacing: 3px;
+    color: var(--purple);
+    margin-bottom: 6px;
+    opacity: 0.8;
+  }
+
+  .ability-text {
+    font-size: clamp(11px, 2.5vw, 12px);
+    color: #8080b0;
+    line-height: 1.7;
+    font-style: italic;
+  }
+
+  /* ── LINKS ── */
+  .card-links {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1px;
+    background: rgba(0,255,65,0.06);
+    position: relative;
+    z-index: 4;
+  }
+
+  .card-link {
+    background: var(--card-bg);
+    padding: 12px 8px;
+    text-align: center;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: background 0.2s;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .card-link:hover, .card-link:active {
+    background: rgba(155,48,255,0.12);
+  }
+
+  .card-link:nth-child(2) { border-left: 1px solid rgba(0,255,65,0.08); border-right: 1px solid rgba(0,255,65,0.08); }
+
+  .link-icon { font-size: 16px; }
+
+  .link-label {
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--purple);
+  }
+
+  /* ── BOTTOM BAR ── */
+  .card-bottom {
+    padding: 8px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    z-index: 4;
+    border-top: 1px solid rgba(0,255,65,0.08);
+  }
+
+  .card-bottom-left {
+    font-size: 9px;
     color: var(--text-dim);
     letter-spacing: 2px;
   }
 
-  footer span {
-    color: var(--red);
+  .card-bottom-right {
+    font-size: 9px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
   }
+
+  /* HP pip row */
+  .pips {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+
+  .pip {
+    width: 8px; height: 8px;
+    border: 1px solid var(--purple);
+    background: var(--purple);
+    box-shadow: 0 0 4px var(--purple-glow);
+  }
+
+  .pip.empty { background: transparent; }
 </style>
 </head>
-
 <body>
 
-<header>
-  <div class="header-label">SECURITY OPERATOR / PRIVACY ENGINEER</div>
-  <h1>Katt Slade</h1>
-  <div class="tagline">Privacy <span>•</span> Network Security <span>•</span> Blue Team</div>
-  <div class="divider"></div>
-  <p class="header-desc">Designing secure systems that protect people, data, and infrastructure. Building defenses that hold.</p>
-</header>
+<canvas id="rain"></canvas>
 
-<div class="container">
+<div class="card-wrap">
+  <div class="card">
+    <div class="card-scanlines"></div>
 
-  <section>
-    <h2>Mission</h2>
-    <p>
-      I focus on building and defending privacy-first networks. My goal is to work in security operations and privacy engineering — using automation, threat detection, and AI to help organizations connect and protect in a digital world.
-    </p>
-  </section>
+    <!-- Top bar -->
+    <div class="card-topbar">
+      <div class="card-id">ID://KS-0001</div>
+      <div class="card-type">PURPLE TEAM ◈</div>
+    </div>
 
-  <section>
-    <h2>Career Trajectory</h2>
-    <div class="grid">
-      <div class="card">
-        <strong>Blue Team & SOC</strong>
-        <p>Threat monitoring, incident response, and defensive security strategy.</p>
+    <!-- Triangle -->
+    <div class="triangle-wrap">
+      <svg class="triangle-svg" viewBox="0 0 120 104" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Outer triangle -->
+        <polygon points="60,4 116,100 4,100"
+          stroke="#9b30ff" stroke-width="1.5" fill="none"
+          stroke-dasharray="0"/>
+        <!-- Inner triangle (inverted, smaller) -->
+        <polygon points="60,32 96,80 24,80"
+          stroke="rgba(155,48,255,0.35)" stroke-width="1" fill="none"/>
+        <!-- Core dot -->
+        <circle cx="60" cy="56" r="3" fill="#9b30ff" opacity="0.9"/>
+        <!-- Radial lines from center -->
+        <line x1="60" y1="56" x2="60" y2="10"  stroke="rgba(155,48,255,0.2)" stroke-width="0.8"/>
+        <line x1="60" y1="56" x2="110" y2="97" stroke="rgba(155,48,255,0.2)" stroke-width="0.8"/>
+        <line x1="60" y1="56" x2="10"  y2="97" stroke="rgba(155,48,255,0.2)" stroke-width="0.8"/>
+        <!-- Corner dots -->
+        <circle cx="60"  cy="4"   r="2.5" fill="#9b30ff"/>
+        <circle cx="116" cy="100" r="2.5" fill="#9b30ff"/>
+        <circle cx="4"   cy="100" r="2.5" fill="#9b30ff"/>
+      </svg>
+    </div>
+
+    <!-- Name -->
+    <div class="card-name-block">
+      <div class="card-name">Katt Slade</div>
+      <div class="card-role">PRIVACY ENGINEER / SECURITY OPERATOR</div>
+      <div class="card-tagline">CONNECT AND PROTECT</div>
+    </div>
+
+    <div class="card-divider"></div>
+
+    <!-- Stats -->
+    <div class="card-stats">
+      <div class="stat-cell">
+        <div class="stat-label">SPECIALIZATION</div>
+        <div class="stat-value purple">Purple Team</div>
       </div>
-      <div class="card">
-        <strong>Network Security</strong>
-        <p>Secure architecture, segmentation, and defensive infrastructure.</p>
+      <div class="stat-cell">
+        <div class="stat-label">PRIMARY OPS</div>
+        <div class="stat-value">Blue Team / SOC</div>
       </div>
-      <div class="card">
-        <strong>Privacy Engineering</strong>
-        <p>Identity, access, and data protection principles.</p>
+      <div class="stat-cell">
+        <div class="stat-label">DOMAIN</div>
+        <div class="stat-value">Network Security</div>
       </div>
-      <div class="card">
-        <strong>Security Automation</strong>
-        <p>AI-assisted workflows and security operations efficiency.</p>
+      <div class="stat-cell">
+        <div class="stat-label">FOCUS</div>
+        <div class="stat-value">Privacy Engineering</div>
       </div>
     </div>
-  </section>
 
-  <section>
-    <h2>Projects</h2>
-    <div class="grid">
-      <div class="card">
-        <strong>Cryptid Arcade</strong>
-        <p>Cybersecurity training platform focused on threat detection and defensive thinking.</p>
-      </div>
-      <div class="card">
-        <strong>Fulton County Research</strong>
-        <p>Analysis of public-sector security incidents and defensive improvements.</p>
-      </div>
-      <div class="card">
-        <strong>Secure Hardware Initiative</strong>
-        <p>Refurbishing and distributing neutralized systems for underserved communities.</p>
-      </div>
+    <!-- Ability -->
+    <div class="card-ability">
+      <div class="ability-label">PASSIVE ABILITY</div>
+      <div class="ability-text">"Bridges offense and defense — using adversarial insight to harden infrastructure. VOID.EXE has never successfully persisted in her network."</div>
     </div>
-  </section>
 
-  <section>
-    <h2>Connect</h2>
-    <div class="links-grid">
-      <a href="#" class="link-card"><span>Resume<span class="link-arrow">→</span></span></a>
-      <a href="#" class="link-card"><span>LinkedIn<span class="link-arrow">→</span></span></a>
-      <a href="#" class="link-card"><span>GitHub<span class="link-arrow">→</span></span></a>
-      <a href="#" class="link-card"><span>YouTube<span class="link-arrow">→</span></span></a>
-      <a href="#" class="link-card"><span>Contact<span class="link-arrow">→</span></span></a>
+    <!-- Links -->
+    <div class="card-links">
+      <a href="index.html" class="card-link">
+        <span class="link-icon">🕹</span>
+        <span class="link-label">ARCADE</span>
+      </a>
+      <a href="#" class="card-link">
+        <span class="link-icon">📄</span>
+        <span class="link-label">RESUME</span>
+      </a>
+      <a href="#" class="card-link">
+        <span class="link-icon">🔗</span>
+        <span class="link-label">LINKEDIN</span>
+      </a>
     </div>
-  </section>
 
+    <!-- Bottom bar -->
+    <div class="card-bottom">
+      <div class="card-bottom-left">© 2026 KATT SLADE</div>
+      <div class="pips">
+        <div class="pip"></div>
+        <div class="pip"></div>
+        <div class="pip"></div>
+        <div class="pip"></div>
+        <div class="pip empty"></div>
+      </div>
+      <div class="card-bottom-right">PWR // 4/5</div>
+    </div>
+
+  </div>
 </div>
 
-<footer>
-  © 2026 <span>Katt Slade</span> — Connect + Protect
-</footer>
+<script>
+// ── MATRIX RAIN ──
+const canvas = document.getElementById('rain');
+const ctx = canvas.getContext('2d');
+let cols, drops;
 
+function initRain() {
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const fontSize = 14;
+  cols = Math.floor(canvas.width / fontSize);
+  drops = Array(cols).fill(1);
+}
+
+function drawRain() {
+  ctx.fillStyle = 'rgba(2,8,5,0.07)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  drops.forEach((y, i) => {
+    // Alternate between green matrix chars and binary
+    const isBinary = Math.random() > 0.6;
+    const char = isBinary
+      ? (Math.random() > 0.5 ? '1' : '0')
+      : String.fromCharCode(0x30A0 + Math.random() * 96);
+
+    // Occasional purple char for accent
+    const isPurple = Math.random() > 0.97;
+    ctx.fillStyle = isPurple
+      ? `rgba(155,48,255,${Math.random() * 0.6 + 0.3})`
+      : `rgba(0,255,65,${Math.random() * 0.4 + 0.08})`;
+
+    ctx.font = '14px monospace';
+    ctx.fillText(char, i * 14, y * 14);
+
+    if (y * 14 > canvas.height && Math.random() > 0.975) drops[i] = 0;
+    drops[i]++;
+  });
+}
+
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(initRain, 100);
+});
+
+initRain();
+setInterval(drawRain, 45);
+</script>
 </body>
 </html>
