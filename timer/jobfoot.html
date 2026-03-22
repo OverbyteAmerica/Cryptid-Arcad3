@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JOBFOOT — Apply Differently</title>
+  <link href="https://fonts.googleapis.com/css2?family=Shrikhand&family=Major+Mono+Display&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --cyan: #0ff;
+      --cyan-dim: #0aa;
+      --black: #000;
+      --white: #fff;
+      --stripe-w: 28px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: #000;
+      color: #fff;
+      font-family: 'Major Mono Display', monospace;
+      overflow-x: hidden;
+      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20'%3E%3Ccircle cx='10' cy='10' r='4' fill='cyan'/%3E%3C/svg%3E") 10 10, crosshair;
+    }
+
+    /* ── STARS CANVAS ── */
+    #stars { position: fixed; top:0; left:0; z-index:0; pointer-events:none; }
+
+    /* ── GRAIN OVERLAY ── */
+    body::after {
+      content:'';
+      position:fixed; inset:0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events:none; z-index:1; opacity:0.5;
+    }
+
+    /* ── HERO ── */
+    #hero {
+      position: relative;
+      z-index: 2;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 40px 20px;
+      overflow: hidden;
+    }
+
+    /* Black & white diagonal stripes behind hero text */
+    #hero::before {
+      content:'';
+      position:absolute; inset:-50%;
+      background: repeating-linear-gradient(
+        -45deg,
+        transparent 0px,
+        transparent var(--stripe-w),
+        rgba(0,255,255,0.03) var(--stripe-w),
+        rgba(0,255,255,0.03) calc(var(--stripe-w)*2)
+      );
+      animation: stripeScroll 12s linear infinite;
+      z-index:0;
+    }
+    @keyframes stripeScroll { to { transform: translateX(80px) translateY(80px); } }
+
+    .hero-eyebrow {
+      font-family: 'Major Mono Display', monospace;
+      font-size: clamp(10px, 2vw, 14px);
+      letter-spacing: 6px;
+      color: var(--cyan-dim);
+      margin-bottom: 16px;
+      position: relative; z-index:1;
+      animation: fadeDown 0.8s ease both;
+    }
+
+    #logo {
+      font-family: 'Shrikhand', cursive;
+      font-size: clamp(72px, 18vw, 160px);
+      color: var(--cyan);
+      text-shadow: 0 0 6px cyan, 0 0 20px cyan, 0 0 60px cyan, 0 0 120px rgba(0,255,255,0.3);
+      line-height: 0.9;
+      position: relative; z-index:1;
+      animation: glowFlicker 1.2s infinite, fadeDown 0.6s ease both;
+      letter-spacing: -2px;
+    }
+
+    @keyframes glowFlicker {
+      0%,100%  { opacity:1; text-shadow: 0 0 6px cyan, 0 0 20px cyan, 0 0 60px cyan; }
+      15%,18%  { opacity:0.6; text-shadow: none; }
+      19%      { opacity:1; text-shadow: 0 0 6px cyan, 0 0 20px cyan, 0 0 60px cyan; }
+      60%,63%  { opacity:0.8; text-shadow: 2px 0 magenta, -2px 0 cyan; }
+    }
+
+    .hero-tagline {
+      font-family: 'Shrikhand', cursive;
+      font-size: clamp(18px, 4.5vw, 36px);
+      color: #fff;
+      margin-top: 16px;
+      letter-spacing: 1px;
+      position: relative; z-index:1;
+      animation: fadeDown 1s ease 0.2s both;
+    }
+
+    .hero-sub {
+      font-family: 'Major Mono Display', monospace;
+      font-size: clamp(11px, 2.5vw, 15px);
+      color: rgba(0,255,255,0.7);
+      margin-top: 12px;
+      letter-spacing: 2px;
+      position: relative; z-index:1;
+      animation: fadeDown 1s ease 0.4s both;
+    }
+
+    /* Beetlejuice carnival call-to-action */
+    .barker-box {
+      margin-top: 40px;
+      border: 3px solid var(--cyan);
+      background: rgba(0,255,255,0.04);
+      padding: 22px 36px;
+      position: relative; z-index:1;
+      max-width: 620px;
+      animation: fadeDown 1s ease 0.6s both;
+      box-shadow: 0 0 30px rgba(0,255,255,0.15), inset 0 0 30px rgba(0,255,255,0.04);
+    }
+
+    .barker-box::before, .barker-box::after {
+      content: '★';
+      font-size: 20px;
+      color: var(--cyan);
+      position: absolute;
+      top: -14px;
+    }
+    .barker-box::before { left: 20px; }
+    .barker-box::after  { right: 20px; }
+
+    .barker-text {
+      font-family: 'Shrikhand', cursive;
+      font-size: clamp(16px, 4vw, 26px);
+      line-height: 1.4;
+      color: #fff;
+    }
+    .barker-text .shout {
+      color: var(--cyan);
+      text-shadow: 0 0 10px cyan;
+      display: inline-block;
+      animation: bounce 0.6s ease infinite alternate;
+    }
+    @keyframes bounce { to { transform: translateY(-3px); } }
+
+    .scroll-hint {
+      margin-top: 48px;
+      font-size: 11px;
+      letter-spacing: 4px;
+      color: rgba(255,255,255,0.3);
+      position: relative; z-index:1;
+      animation: fadeDown 1s ease 1s both, blink 2s ease 2s infinite;
+    }
+    @keyframes blink { 0%,100%{opacity:0.3} 50%{opacity:0.8} }
+    @keyframes fadeDown { from{opacity:0;transform:translateY(-16px)} to{opacity:1;transform:none} }
+
+    /* ── SECTION WRAPPER ── */
+    .section {
+      position: relative; z-index:2;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 60px 24px;
+    }
+
+    /* ── SECTION DIVIDER ── */
+    .divider {
+      position: relative; z-index:2;
+      width:100%;
+      height: 3px;
+      background: repeating-linear-gradient(90deg, var(--cyan) 0px, var(--cyan) 10px, transparent 10px, transparent 20px);
+      opacity: 0.4;
+      margin: 0;
+    }
+
+    /* ── PROBLEM SECTION ── */
+    #problem {
+      background: rgba(0,255,255,0.02);
+      border-top: 1px solid rgba(0,255,255,0.1);
+      border-bottom: 1px solid rgba(0,255,255,0.1);
+    }
+
+    .section-label {
+      font-size: 10px;
+      letter-spacing: 6px;
+      color: var(--cyan-dim);
+      margin-bottom: 24px;
+      display: block;
+    }
+
+    .problem-header {
+      font-family: 'Shrikhand', cursive;
+      font-size: clamp(30px, 7vw, 58px);
+      color: #fff;
+      line-height: 1.05;
+      margin-bottom: 32px;
+    }
+    .problem-header span { color: var(--cyan); }
+
+    /* Pain point list — beetlejuice testimonial style */
+    .pain-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .pain-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 14px 18px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(0,0,0,0.5);
+      font-family: 'Major Mono Display', monospace;
+      font-size: clamp(11px, 2.5vw, 14px);
+      line-height: 1.6;
+      color: rgba(255,255,255,0.75);
+      transition: border-color 0.2s, background 0.2s;
+      cursor: default;
+    }
+
+    .pain-item:hover {
+      border-color: var(--cyan);
+      background: rgba(0,255,255,0.04);
+      color: #fff;
+    }
+
+    .pain-icon {
+      font-size: 20px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    /* ── SOLUTION SECTION ── */
+    #solution {
+      text-align: center;
+    }
+
+    .solution-header {
+      font-family: 'Shrikhand', cursive;
+      font-size: clamp(28px, 7vw, 60px);
+      color: var(--cyan);
+      text-shadow: 0 0 20px cyan;
+      margin-bottom: 12px;
+      animation: glowFlicker 3s infinite;
+    }
+
+    .solution-sub {
+      font-size: clamp(11px, 2.5vw, 14px);
+      color: rgba(255,255,255,0.55);
+      letter-spacing: 3px;
+      margin-bottom: 52px;
+    }
+
+    /* Feature cards */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+      text-align: left;
+    }
+
+    .feat-card {
+      border: 2px solid rgba(255,255,255,0.12);
+      background: #000;
+      padding: 24px 22px;
+      transition: all 0.25s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .feat-card::before {
+      content:'';
+      position:absolute; top:0; left:0; right:0; height:2px;
+      background: var(--cyan);
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: transform 0.3s ease;
+    }
+
+    .feat-card:hover {
+      border-color: var(--cyan);
+      background: rgba(0,255,255,0.04);
+      box-shadow: 0 0 24px rgba(0,255,255,0.12);
+      transform: translateY(-3px);
+    }
+    .feat-card:hover::before { transform: scaleX(1); }
+
+    .feat-icon {
+      font-size: 28px;
+      margin-bottom: 12px;
+      display: block;
+    }
+
+    .feat-title {
+      font-family: 'Shrikhand', cursive;
+      font-size: clamp(18px, 4vw, 24px);
+      color: #fff;
+      margin-bottom: 10px;
+      line-height: 1.1;
+    }
+
+    .feat-desc {
+      font-family: "Courier New", monospace;
+      font-size: clamp(12px, 2.5vw, 14px);
+      line-height: 1.7;
+      color: rgba(255,255,255,0.6);
+    }
+
+    .feat-desc strong { color: var(--cyan); font-weight: normal; }
+
+    /* ── BEETLEJUICE PITCH SECTION ── */
+    #pitch {
+      position: relative; z-index:2;
+      background: var(--cyan);
+      color: #000;
+      overflow: hidden;
+      padding: 0;
+    }
+
+    #pitch::before {
+      content:'';
+      position:absolute; inset:-40%;
+      background: repeating-linear-gradient(
+        45deg,
+        transparent 0px, transparent 30px,
+        rgba(0,0,0,0.08) 30px, rgba(0,0,0,0.08) 60px
+      );
+      animation: stripeScroll 8s linear infinite reverse;
+    }
+
+    .pitch-inner {
+      position: relative; z-index:1;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 70px 24px;
+      text-align: center;
+    }
+
+    .pitch-eyebrow {
+      font-family: 'Major Mono Display', monospace;
+      font-size: 10px;
+      letter-spacing: 6px;
+      color: rgba(0,0,0,0.5);
+      margin-bottom: 16px;
+    }
+
+    .pitch-headline {
+      font-family: 'Shrikhand', cursive;
+      font-size: clamp(32px, 8vw, 72px);
+      color: #000;
+      line-height: 1;
+      margin-bottom: 20px;
+    }
+
+    .pitch-body {
+      font-family: 'Major Mono Display', monospace;
+      font-size: clamp(12px, 2.5vw, 16px);
+      line-height: 1.7;
+      color: rgba(0,0,0,0.75);
+      max-width: 560px;
+      margin: 0 auto 32px;
+    }
+
+    /* ── CTA SECTION ── */
+    #cta {
+      position: relative; z-index:2;
+      text-align: center;
+      padding: 80px 24px 100px;
+    }
+
+    .cta-headline {
+      font-family: 'Shrikhand', cursive;
+      font-size: clamp(32px, 8vw, 70px);
+      color: #fff;
+      line-height: 1.05;
+      margin-bottom: 16px;
+    }
+    .cta-headline .cyan { color: var(--cyan); text-shadow: 0 0 16px cyan; }
+
+    .cta-sub {
+      font-size: clamp(11px, 2.5vw, 14px);
+      color: rgba(255,255,255,0.45);
+      letter-spacing: 3px;
+      margin-bottom: 40px;
+    }
+
+    /* Big glowing button */
+    .btn-main {
+      display: inline-block;
+      font-family: 'Shrikhand', cursive;
+      font-size: clamp(20px, 5vw, 30px);
+      letter-spacing: 2px;
+      color: #000;
+      background: var(--cyan);
+      border: none;
+      padding: 18px 52px;
+      cursor: pointer;
+      text-decoration: none;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 0 30px rgba(0,255,255,0.5), 0 0 60px rgba(0,255,255,0.2);
+      transition: all 0.2s;
+    }
+
+    .btn-main::before {
+      content:'';
+      position:absolute; top:0; left:-100%;
+      width:60%; height:100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+      animation: shimmer 2.5s ease infinite;
+    }
+    @keyframes shimmer { to { left: 200%; } }
+
+    .btn-main:hover {
+      background: #fff;
+      box-shadow: 0 0 50px rgba(0,255,255,0.8), 0 0 100px rgba(0,255,255,0.4);
+      transform: scale(1.05);
+    }
+
+    .btn-secondary {
+      display: inline-block;
+      margin-top: 18px;
+      font-family: 'Major Mono Display', monospace;
+      font-size: clamp(11px, 2.5vw, 13px);
+      letter-spacing: 3px;
+      color: rgba(255,255,255,0.4);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(255,255,255,0.15);
+      transition: color 0.2s, border-color 0.2s;
+      cursor: pointer;
+    }
+    .btn-secondary:hover { color: var(--cyan); border-color: var(--cyan); }
+
+    /* ── FOOTER ── */
+    footer {
+      position: relative; z-index:2;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      padding: 24px;
+      text-align: center;
+      font-size: 11px;
+      letter-spacing: 3px;
+      color: rgba(255,255,255,0.2);
+    }
+    footer span { color: var(--cyan-dim); }
+
+    /* ── TICKER TAPE ── */
+    .ticker-wrap {
+      position: relative; z-index:2;
+      width:100%; overflow:hidden;
+      background: var(--cyan);
+      padding: 8px 0;
+      border-top: 2px solid #000;
+      border-bottom: 2px solid #000;
+    }
+    .ticker {
+      display: flex;
+      white-space: nowrap;
+      animation: ticker 22s linear infinite;
+    }
+    .ticker-item {
+      font-family: 'Shrikhand', cursive;
+      font-size: 14px;
+      color: #000;
+      padding: 0 32px;
+      letter-spacing: 2px;
+    }
+    @keyframes ticker { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+
+    /* ── GLITCH TEXT ── */
+    .glitch {
+      position: relative;
+      display: inline-block;
+    }
+    .glitch::before, .glitch::after {
+      content: attr(data-text);
+      position: absolute;
+      top:0; left:0;
+      font-family: inherit;
+      font-size: inherit;
+      color: inherit;
+    }
+    .glitch::before {
+      color: magenta;
+      clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+      animation: glitchTop 4s infinite;
+    }
+    .glitch::after {
+      color: var(--cyan);
+      clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
+      animation: glitchBot 4s infinite;
+    }
+    @keyframes glitchTop {
+      0%,90%,100%{transform:none;opacity:0}
+      92%{transform:translate(-3px,-2px);opacity:1}
+      94%{transform:translate(3px,1px);opacity:0.7}
+      96%{transform:none;opacity:0}
+    }
+    @keyframes glitchBot {
+      0%,88%,100%{transform:none;opacity:0}
+      90%{transform:translate(3px,2px);opacity:1}
+      93%{transform:translate(-2px,-1px);opacity:0.7}
+      95%{transform:none;opacity:0}
+    }
+
+    /* ── BACK LINK ── */
+    .back-link {
+      position: fixed;
+      top: 16px; left: 20px;
+      z-index: 100;
+      font-family: 'Major Mono Display', monospace;
+      font-size: 11px;
+      letter-spacing: 3px;
+      color: rgba(0,255,255,0.5);
+      text-decoration: none;
+      border: 1px solid rgba(0,255,255,0.2);
+      padding: 6px 12px;
+      background: rgba(0,0,0,0.7);
+      transition: all 0.2s;
+    }
+    .back-link:hover { color: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 10px rgba(0,255,255,0.3); }
+
+    /* Scroll reveal */
+    .reveal {
+      opacity:0;
+      transform:translateY(30px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .reveal.visible { opacity:1; transform:none; }
+  </style>
+</head>
+<body>
+
+<canvas id="stars"></canvas>
+
+<a class="back-link" href="games-main.html">← ARCADE</a>
+
+<!-- ── TICKER TAPE ── -->
+<div class="ticker-wrap" aria-hidden="true">
+  <div class="ticker">
+    <span class="ticker-item">★ JOBFOOT ★</span>
+    <span class="ticker-item">APPLY DIFFERENTLY</span>
+    <span class="ticker-item">★ YOUR DATA YOUR KEY ★</span>
+    <span class="ticker-item">NO MORE GHOST JOBS</span>
+    <span class="ticker-item">★ PRIVACY FIRST HIRING ★</span>
+    <span class="ticker-item">THE BLACK HOLE ENDS HERE</span>
+    <span class="ticker-item">★ JOBFOOT ★</span>
+    <span class="ticker-item">APPLY DIFFERENTLY</span>
+    <span class="ticker-item">★ YOUR DATA YOUR KEY ★</span>
+    <span class="ticker-item">NO MORE GHOST JOBS</span>
+    <span class="ticker-item">★ PRIVACY FIRST HIRING ★</span>
+    <span class="ticker-item">THE BLACK HOLE ENDS HERE</span>
+  </div>
+</div>
+
+<!-- ── HERO ── -->
+<section id="hero">
+  <div class="hero-eyebrow">CRYPTID ARCADE PRESENTS</div>
+
+  <h1 id="logo" class="glitch" data-text="JOBFOOT">JOBFOOT</h1>
+
+  <div class="hero-tagline">The Hiring Platform That Actually Sees You.</div>
+  <div class="hero-sub">privacy-first · transparent · no black holes</div>
+
+  <div class="barker-box">
+    <div class="barker-text">
+      Say it three times and the black hole disappears —<br>
+      <span class="shout">JOBFOOT.</span>
+      <span class="shout" style="animation-delay:0.15s">JOBFOOT.</span>
+      <span class="shout" style="animation-delay:0.3s">JOBFOOT.</span><br>
+      <span style="font-size:0.75em;color:rgba(255,255,255,0.6);font-family:'Major Mono Display',monospace;letter-spacing:2px;">
+        (your data stays yours this time)
+      </span>
+    </div>
+  </div>
+
+  <div class="scroll-hint">▼ &nbsp; SCROLL TO MEET YOUR DOOM &nbsp; ▼</div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── PROBLEM ── -->
+<section id="problem">
+  <div class="section reveal">
+    <span class="section-label">// THE HAUNTING</span>
+    <h2 class="problem-header">The job market is a<br><span>ghost town.</span></h2>
+
+    <ul class="pain-list">
+      <li class="pain-item">
+        <span class="pain-icon">👻</span>
+        <span>You apply to <strong>50 jobs</strong> and disappear into the void. No response. Not even an auto-reply. Just silence.</span>
+      </li>
+      <li class="pain-item">
+        <span class="pain-icon">⌨️</span>
+        <span>You retype your entire resume — name, address, phone, LinkedIn — into <strong>every. single. form.</strong> Like they can't see the PDF.</span>
+      </li>
+      <li class="pain-item">
+        <span class="pain-icon">🔒</span>
+        <span>They demand your personal data <strong>before</strong> they've even looked at you. Social security? References? For a screening call?</span>
+      </li>
+      <li class="pain-item">
+        <span class="pain-icon">🪦</span>
+        <span>Rejected with no reason. Or worse — <strong>ghosted.</strong> Three interviews deep. Radio silence. The position was probably filled internally.</span>
+      </li>
+      <li class="pain-item">
+        <span class="pain-icon">🌀</span>
+        <span>You have <strong>no idea</strong> if anyone saw your application. The listing has been up for 8 months. It might not even be real.</span>
+      </li>
+    </ul>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── PITCH (Beetlejuice style) ── -->
+<section id="pitch">
+  <div class="pitch-inner reveal">
+    <div class="pitch-eyebrow">// THE SÉANCE</div>
+    <h2 class="pitch-headline">It's showtime.</h2>
+    <p class="pitch-body">
+      The old system is dead. We haunted it ourselves.<br><br>
+      Jobfoot rises from its ashes — loud, alive, and <em>completely on your side.</em>
+      We built the platform job seekers actually deserve.
+      No tricks. No disappearing acts. No cursed listings from 2019.
+    </p>
+    <div style="font-family:'Shrikhand',cursive;font-size:clamp(16px,4vw,24px);color:#000;opacity:0.6;letter-spacing:2px;">
+      ★ &nbsp; THE BLACK HOLE ENDS HERE &nbsp; ★
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── SOLUTION ── -->
+<section id="solution">
+  <div class="section reveal">
+    <span class="section-label">// THE ARSENAL</span>
+    <h2 class="solution-header">Jobfoot is the answer.</h2>
+    <p class="solution-sub">privacy-first · transparent · built for respect</p>
+
+    <div class="features">
+
+      <div class="feat-card reveal">
+        <span class="feat-icon">🔑</span>
+        <div class="feat-title">Your Data. Your Key.</div>
+        <div class="feat-desc">
+          Create your <strong>Jobfoot Key</strong> once. Share access when you choose.
+          Lock sensitive information until it's actually needed —
+          not until some recruiter decides to finally open your file.
+        </div>
+      </div>
+
+      <div class="feat-card reveal">
+        <span class="feat-icon">📊</span>
+        <div class="feat-title">No More Guessing</div>
+        <div class="feat-desc">
+          Track every application in real time:<br>
+          <strong>Applied → Viewed → Interview → Decision.</strong><br>
+          Get real feedback. Not silence.
+          Know exactly where you stand, always.
+        </div>
+      </div>
+
+      <div class="feat-card reveal">
+        <span class="feat-icon">⭐</span>
+        <div class="feat-title">Apply Where It Matters</div>
+        <div class="feat-desc">
+          <strong>Priority roles guarantee responses.</strong>
+          No more wasting weeks on dead listings that haven't been updated since Obama's first term.
+        </div>
+      </div>
+
+      <div class="feat-card reveal">
+        <span class="feat-icon">👥</span>
+        <div class="feat-title">Don't Apply Alone</div>
+        <div class="feat-desc">
+          Join <strong>small job circles.</strong>
+          Share leads. Get referrals. Move together.
+          The job market is rigged for networks — now you have one.
+        </div>
+      </div>
+
+      <div class="feat-card reveal">
+        <span class="feat-icon">🛡️</span>
+        <div class="feat-title">Built for Respect</div>
+        <div class="feat-desc">
+          <strong>No data mining.</strong>
+          No unnecessary questions.
+          No endless forms that make you feel like a case number.
+          You are a person. We built it that way.
+        </div>
+      </div>
+
+      <div class="feat-card reveal" style="border-color:rgba(0,255,255,0.3);background:rgba(0,255,255,0.03);">
+        <span class="feat-icon">👁️</span>
+        <div class="feat-title">The System Sees You</div>
+        <div class="feat-desc">
+          Most platforms are built for employers.
+          <strong>Jobfoot is built for you.</strong>
+          Transparent. Accountable. Actually alive.
+          The cryptid the hiring world didn't see coming.
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── CTA ── -->
+<section id="cta">
+  <div class="reveal">
+    <span class="section-label">// THE INVITATION</span>
+    <h2 class="cta-headline">
+      You shouldn't have to<br>
+      <span class="cyan">chase a response.</span>
+    </h2>
+    <p class="cta-sub">the system that works with you. not against you.</p>
+
+    <div>
+      <a href="#" class="btn-main">REQUEST ACCESS</a>
+    </div>
+    <div style="margin-top:16px">
+      <a class="btn-secondary">learn how it works ↓</a>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<footer>
+  <span>JOBFOOT</span> © 2026 &nbsp;·&nbsp; A CRYPTID ARCADE PRODUCTION &nbsp;·&nbsp; a better way to apply
+</footer>
+
+<!-- ── SCRIPTS ── -->
+<script>
+  // Stars (matches arcade)
+  const canvas = document.getElementById('stars');
+  const ctx = canvas.getContext('2d');
+  let stars = [];
+  function initStars() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    stars = Array.from({length:160}, () => ({
+      x: Math.random()*canvas.width,
+      y: Math.random()*canvas.height,
+      size: Math.random()*1.8+0.5,
+      speed: Math.random()*0.5+0.15
+    }));
+  }
+  function animateStars() {
+    ctx.fillStyle='black';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle='white';
+    stars.forEach(s=>{
+      ctx.fillRect(s.x,s.y,s.size,s.size);
+      s.x -= s.speed;
+      if(s.x < 0) s.x = canvas.width;
+    });
+    requestAnimationFrame(animateStars);
+  }
+  let rt;
+  window.addEventListener('resize',()=>{ clearTimeout(rt); rt=setTimeout(initStars,100); });
+  initStars(); animateStars();
+
+  // Scroll reveal
+  const revealEls = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => { if(e.isIntersecting) { e.target.classList.add('visible'); } });
+  }, { threshold: 0.12 });
+  revealEls.forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>
