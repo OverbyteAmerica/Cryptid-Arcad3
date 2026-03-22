@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Packet Reef — Wireshark Defense</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#000510; --bg-ui:#00080f; --blue-dim:#003355;
+  --blue-glow:#0088cc; --blue-bright:#00c3ff; --blue-hot:#55eeff;
+  --danger:#ff3355; --text:#a8deff; --text-dim:#3a7a99;
+  --green:#00ffaa; --yellow:#ffe066; --orange:#ff9933; --purple:#bb66ff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Rajdhani',sans-serif;font-weight:500;overflow-x:hidden;user-select:none}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,150,255,0.012) 2px,rgba(0,150,255,0.012) 4px);pointer-events:none;z-index:999}
+
+/* HEADER */
+#header{padding:7px 13px 5px;background:linear-gradient(180deg,#000c18,transparent);border-bottom:1px solid #001a2e;display:flex;align-items:center;justify-content:space-between;position:relative}
+#header::after{content:'';position:absolute;bottom:0;left:8%;right:8%;height:1px;background:linear-gradient(90deg,transparent,var(--blue-glow),transparent)}
+#header h2{font-family:'Share Tech Mono',monospace;font-size:15px;letter-spacing:3px;color:var(--blue-hot);text-shadow:0 0 14px var(--blue-glow)}
+#tierBadge{font-family:'Share Tech Mono',monospace;font-size:9px;letter-spacing:2px;padding:2px 7px;border:1px solid #003355;color:var(--blue-hot);transition:all 0.4s}
+#levelCounter{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:2px}
+
+/* STRIP */
+#tierStrip{display:flex;gap:2px;padding:3px 9px;background:#000a14;border-bottom:1px solid #001020}
+.tier-pip{flex:1;height:3px;background:#001a2e;border-radius:2px;transition:all 0.4s}
+.tier-pip.done{box-shadow:0 0 4px var(--blue-glow)}
+.tier-pip.active{animation:pp 1s ease-in-out infinite}
+@keyframes pp{0%,100%{opacity:1}50%{opacity:0.4}}
+
+/* CANVAS */
+#game{width:100%;display:block;touch-action:none}
+
+/* SHARK ATTACK BAR */
+#attackBar{height:6px;background:#001020;position:relative;overflow:hidden}
+#attackFill{height:100%;width:100%;background:linear-gradient(90deg,var(--green),var(--yellow),var(--danger));transition:width 0.08s linear;box-shadow:0 0 8px}
+#attackLabel{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--danger);text-align:center;padding:2px 0;letter-spacing:2px;background:#000a10;border-bottom:1px solid #001a2e}
+
+/* UI PANEL */
+#ui{background:var(--bg-ui);border-top:1px solid #001a2e;padding:8px 12px;position:relative}
+#ui::before{content:'';position:absolute;top:0;left:5%;right:5%;height:1px;background:linear-gradient(90deg,transparent,var(--blue-glow),transparent)}
+
+/* Alert box — the captured packet */
+#alertBox{background:linear-gradient(135deg,rgba(0,20,40,0.95),rgba(0,10,25,0.95));border:1px solid var(--blue-dim);border-left:3px solid var(--danger);padding:8px 11px;margin-bottom:8px;transition:border-left-color 0.3s}
+#alertLabel{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--danger);letter-spacing:3px;margin-bottom:4px}
+#packetDisplay{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--blue-hot);line-height:1.7}
+#packetDisplay .prow{display:flex;gap:10px;flex-wrap:wrap}
+#packetDisplay .pk{color:var(--text-dim)}
+#packetDisplay .pv{color:var(--blue-hot)}
+#packetDisplay .pv.danger{color:var(--danger);text-shadow:0 0 8px rgba(255,51,85,0.5)}
+#packetDisplay .pv.warn{color:var(--yellow)}
+#packetDisplay .pv.ok{color:var(--green)}
+
+/* Hint */
+#hintBox{font-size:12px;color:#5ab0d0;margin-bottom:8px;line-height:1.5;padding:5px 9px;background:rgba(0,30,50,0.4);border:1px solid #001a2e;border-left:2px solid var(--blue-dim)}
+#mechanic{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--orange);margin-bottom:7px;letter-spacing:1px}
+
+/* FILTER CHOICES — the core interaction */
+#filterQuestion{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text-dim);letter-spacing:2px;margin-bottom:6px}
+#choices{display:flex;flex-direction:column;gap:5px}
+.choice-btn{
+  background:rgba(0,10,22,0.8);
+  border:1px solid var(--blue-dim);
+  color:var(--text);
+  padding:7px 12px;
+  font-family:'Share Tech Mono',monospace;
+  font-size:11px;
+  cursor:pointer;
+  transition:all 0.18s;
+  text-align:left;
+  line-height:1.5;
+  border-radius:2px;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+.choice-btn:hover{border-color:var(--blue-bright);color:var(--blue-hot);background:rgba(0,50,100,0.2);box-shadow:0 0 10px rgba(0,136,204,0.2)}
+.choice-btn .cmd{color:var(--green);font-size:12px;font-weight:bold}
+.choice-btn .desc{color:#4a90a8;font-size:10px}
+.choice-btn.correct{border-color:var(--green)!important;background:rgba(0,80,50,0.3)!important;box-shadow:0 0 14px rgba(0,255,170,0.3)!important}
+.choice-btn.wrong{border-color:var(--danger)!important;background:rgba(80,0,20,0.3)!important;opacity:0.5}
+.choice-btn:disabled{cursor:not-allowed}
+
+#message{margin-top:7px;font-family:'Share Tech Mono',monospace;font-size:11px;letter-spacing:1px;min-height:16px;text-align:center}
+.msg-success{color:var(--green);text-shadow:0 0 9px rgba(0,255,170,0.5)}
+.msg-fail{color:var(--danger);text-shadow:0 0 9px rgba(255,51,85,0.5)}
+.msg-warn{color:var(--yellow)}
+
+/* Overlay screens */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,3,10,0.96);z-index:400;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:20px}
+.overlay h1{font-family:'Share Tech Mono',monospace;font-size:clamp(16px,4vw,26px);letter-spacing:3px;margin-bottom:10px}
+.overlay .sub{color:#5ab0d0;font-size:13px;max-width:480px;line-height:1.7;margin-bottom:14px}
+.overlay .warn{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--orange);letter-spacing:2px;margin-bottom:16px}
+.overlay-btn{background:transparent;border:1px solid var(--blue-bright);color:var(--blue-hot);padding:8px 24px;font-family:'Share Tech Mono',monospace;font-size:12px;letter-spacing:3px;cursor:pointer;transition:all 0.2s}
+.overlay-btn:hover{background:rgba(0,136,204,0.15);box-shadow:0 0 12px rgba(0,136,204,0.4)}
+
+/* Game over */
+#gameOver h1{color:var(--danger);text-shadow:0 0 20px rgba(255,51,85,0.6)}
+/* Complete */
+#complete h1{color:var(--blue-hot);text-shadow:0 0 24px var(--blue-glow)}
+.fscore{font-family:'Share Tech Mono',monospace;font-size:16px;color:var(--green);margin-bottom:8px;text-shadow:0 0 9px var(--green)}
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div id="levelCounter">LVL --/15</div>
+  <h2>⬡ PACKET REEF — WIRESHARK DEFENSE</h2>
+  <div id="tierBadge">TIER 1</div>
+</div>
+<div id="tierStrip"></div>
+
+<canvas id="game"></canvas>
+
+<div id="attackBar"><div id="attackFill"></div></div>
+<div id="attackLabel">🦈 SHARK APPROACHING — ENTER WIRESHARK FILTER TO BLOCK</div>
+
+<div id="ui">
+  <div id="alertBox">
+    <div id="alertLabel">// SUSPICIOUS TRAFFIC DETECTED — CAPTURE LOG</div>
+    <div id="packetDisplay"></div>
+  </div>
+
+  <div id="hintBox"></div>
+  <div id="mechanic"></div>
+
+  <div id="filterQuestion">// SELECT THE CORRECT WIRESHARK FILTER TO BLOCK THIS ATTACK:</div>
+  <div id="choices"></div>
+  <div id="message"></div>
+</div>
+
+<!-- Tier intro -->
+<div class="overlay" id="tierScreen">
+  <h1 id="tierTitle" style="color:var(--blue-hot);text-shadow:0 0 20px var(--blue-glow)"></h1>
+  <div class="sub" id="tierSub"></div>
+  <div class="warn" id="tierWarn"></div>
+  <button class="overlay-btn" id="tierContinue" onclick="startTier()">ENTER TIER ›</button>
+</div>
+
+<!-- Game over -->
+<div class="overlay" id="gameOver">
+  <h1>🦈 DIVER LOST</h1>
+  <div class="sub" id="gameOverMsg"></div>
+  <button class="overlay-btn" onclick="restartLevel()" style="border-color:var(--danger);color:var(--danger);margin-bottom:10px">RETRY LEVEL</button>
+</div>
+
+<!-- Complete -->
+<div class="overlay" id="complete">
+  <h1>🛡️ REEF SECURED</h1>
+  <div class="fscore" id="finalScore"></div>
+  <div class="sub">All 3 tiers complete. 15 attacks neutralized. The diver is safe. You are now a certified Wireshark analyst.</div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────
+// CANVAS SETUP
+// ─────────────────────────────────────────────────────────────
+const canvas = document.getElementById("game")
+const ctx = canvas.getContext("2d")
+let W, H
+
+function resize() {
+  W = window.innerWidth
+  H = Math.min(window.innerHeight * 0.32, 210)
+  canvas.width = W
+  canvas.height = H
+}
+resize()
+window.addEventListener('resize', resize)
+
+// ─────────────────────────────────────────────────────────────
+// SHARK ANIMATION STATE
+// ─────────────────────────────────────────────────────────────
+let sharkX = 0          // 0 = left edge, 1 = reached diver
+let sharkTarget = 0     // driven by timer
+let sharkBlocked = false
+let sharkFleeing = false
+let sharkFleeX = 0
+let bubbles = Array.from({length:16}, () => ({
+  x: Math.random()*1000, y: Math.random()*300,
+  r: 0.8 + Math.random()*2, speed: 0.15+Math.random()*0.4,
+  alpha: 0.06 + Math.random()*0.16
+}))
+let bloodParticles = []
+let shakeFrames = 0
+
+function drawScene() {
+  // Background ocean
+  const g = ctx.createLinearGradient(0,0,0,H)
+  g.addColorStop(0,'#000c1a'); g.addColorStop(1,'#00020a')
+  ctx.fillStyle = g; ctx.fillRect(0,0,W,H)
+
+  // Grid
+  ctx.strokeStyle='rgba(0,50,100,0.08)'; ctx.lineWidth=1
+  for(let x=0;x<W;x+=55){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}
+  for(let y=0;y<H;y+=55){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
+
+  // Bubbles
+  bubbles.forEach(b => {
+    b.x=(b.x+0.2)%(W+15); b.y-=b.speed
+    if(b.y<-4){b.y=H+4;b.x=Math.random()*W}
+    ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,Math.PI*2)
+    ctx.fillStyle=`rgba(0,150,255,${b.alpha})`; ctx.fill()
+  })
+
+  // Reef bottom
+  ctx.fillStyle='rgba(0,13,26,0.65)'
+  ctx.beginPath(); ctx.moveTo(0,H)
+  for(let x=0;x<=W;x+=30) ctx.lineTo(x,H-8-12*Math.sin(x*0.04)*Math.cos(x*0.013))
+  ctx.lineTo(W,H); ctx.closePath(); ctx.fill()
+
+  // Camera shake on attack
+  let ox=0, oy=0
+  if(shakeFrames>0){ shakeFrames--; ox=(Math.random()-0.5)*6; oy=(Math.random()-0.5)*4 }
+  ctx.save(); ctx.translate(ox,oy)
+
+  // Blood particles
+  bloodParticles = bloodParticles.filter(p=>p.life>0)
+  bloodParticles.forEach(p=>{
+    p.x+=p.vx; p.y+=p.vy; p.vy+=0.1; p.life-=2
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2)
+    ctx.fillStyle=`rgba(255,30,60,${p.life/100})`; ctx.fill()
+  })
+
+  // DIVER (right side)
+  const diverX = W - 40
+  const diverY = H * 0.48
+  drawDiver(diverX, diverY)
+
+  // SHARK
+  let sx
+  if(sharkFleeing) {
+    sharkFleeX -= 5
+    sx = sharkFleeX
+    if(sx < -80) { sharkFleeing=false; sharkX=0; sharkTarget=0; sharkFleeX=0 }
+  } else {
+    const displayX = sharkBlocked ? sharkX : sharkX + (sharkTarget - sharkX)*0.04
+    if(!sharkBlocked) sharkX += (sharkTarget - sharkX)*0.04
+    sx = sharkX * (W - 120) + 30
+  }
+  if(!sharkFleeing) drawShark(sx, H*0.45, sharkX)
+
+  ctx.restore()
+}
+
+function drawDiver(x, y) {
+  // Tank
+  ctx.fillStyle='#1a4a6a'
+  ctx.beginPath(); ctx.roundRect(x-6, y-14, 12, 28, 4); ctx.fill()
+  ctx.strokeStyle='#0af'; ctx.lineWidth=1; ctx.stroke()
+  // Body
+  ctx.fillStyle='#2a7a9a'
+  ctx.beginPath(); ctx.ellipse(x, y, 9, 14, 0, 0, Math.PI*2); ctx.fill()
+  // Head
+  ctx.fillStyle='#1a5a7a'
+  ctx.beginPath(); ctx.arc(x, y-18, 8, 0, Math.PI*2); ctx.fill()
+  ctx.strokeStyle='#55eeff'; ctx.lineWidth=1.5; ctx.stroke()
+  // Mask lens glow
+  ctx.fillStyle='rgba(85,238,255,0.4)'
+  ctx.beginPath(); ctx.ellipse(x, y-18, 4, 4, 0, 0, Math.PI*2); ctx.fill()
+  // Fins
+  ctx.fillStyle='#0088aa'
+  ctx.beginPath(); ctx.ellipse(x+6, y+18, 10, 4, 0.4, 0, Math.PI*2); ctx.fill()
+  ctx.beginPath(); ctx.ellipse(x-6, y+18, 10, 4, -0.4, 0, Math.PI*2); ctx.fill()
+  // Air bubbles from diver
+  for(let i=0;i<3;i++) {
+    const t = (Date.now()/800 + i*0.4) % 1
+    ctx.beginPath(); ctx.arc(x+10, y-15-t*30, 2-t*1.5, 0, Math.PI*2)
+    ctx.fillStyle=`rgba(170,240,255,${0.5-t*0.5})`; ctx.fill()
+  }
+}
+
+function drawShark(x, y, progress) {
+  const facingLeft = true // shark swims right→left toward diver on right side
+  const sc = 1 + progress*0.3 // gets bigger as it approaches
+  ctx.save(); ctx.translate(x, y); ctx.scale(sc, sc)
+
+  // Danger glow
+  if(progress > 0.6) {
+    const glow = (progress-0.6)/0.4
+    ctx.shadowColor = `rgba(255,50,80,${glow*0.7})`
+    ctx.shadowBlur = 20 + glow*15
+  }
+
+  // Tail fin (left/back)
+  ctx.fillStyle='#0a7aaa'
+  ctx.beginPath(); ctx.moveTo(-28,0); ctx.lineTo(-45,-14); ctx.lineTo(-45,14); ctx.closePath(); ctx.fill()
+
+  // Body
+  ctx.fillStyle='#1599cc'
+  ctx.beginPath(); ctx.moveTo(32,0); ctx.quadraticCurveTo(5,-12,-26,-5); ctx.lineTo(-28,0); ctx.quadraticCurveTo(-26,5,5,12); ctx.closePath(); ctx.fill()
+  // Belly
+  ctx.fillStyle='rgba(200,240,255,0.25)'
+  ctx.beginPath(); ctx.ellipse(4, 3, 18, 6, 0, 0, Math.PI*2); ctx.fill()
+
+  // Dorsal fin
+  ctx.fillStyle='#0e88bb'
+  ctx.beginPath(); ctx.moveTo(6,-11); ctx.lineTo(-2,-28); ctx.lineTo(-18,-11); ctx.closePath(); ctx.fill()
+  // Pectoral fin
+  ctx.fillStyle='#0e88bb'
+  ctx.beginPath(); ctx.moveTo(10,5); ctx.lineTo(18,20); ctx.lineTo(-2,8); ctx.closePath(); ctx.fill()
+
+  // Eye
+  ctx.fillStyle='#001020'; ctx.beginPath(); ctx.arc(22,-3,3.5,0,Math.PI*2); ctx.fill()
+  ctx.fillStyle='rgba(255,255,255,0.5)'; ctx.beginPath(); ctx.arc(23,-4,1.2,0,Math.PI*2); ctx.fill()
+
+  // Teeth (visible when close)
+  if(progress > 0.45) {
+    ctx.fillStyle='rgba(255,255,255,0.9)'
+    const ta = (progress-0.45)*3
+    for(let i=0;i<5;i++) {
+      ctx.beginPath(); ctx.moveTo(28-i*4, 3*ta)
+      ctx.lineTo(26-i*4, 10*ta); ctx.lineTo(24-i*4, 3*ta)
+      ctx.closePath(); ctx.fill()
+    }
+  }
+
+  ctx.shadowBlur=0; ctx.restore()
+}
+
+// ─────────────────────────────────────────────────────────────
+// TIER & LEVEL DATA
+// ─────────────────────────────────────────────────────────────
+function ip() { return `${10+ri(240)}.${ri(255)}.${ri(255)}.${ri(254)+1}` }
+function ri(n) { return Math.floor(Math.random()*n) }
+function rip() { return `${192}.168.${ri(5)}.${ri(200)+2}` }
+
+// Each level defines: what the captured packet looks like,
+// the correct Wireshark filter, and 3 decoy filters.
+const TIER_DEFS = [
+  // ── TIER 1: APPRENTICE ── slow timer, 4 choices always shown, full hints
+  {
+    id:1, name:"TIER 1 — APPRENTICE", color:"#00c3ff",
+    sub:"A shark is approaching a reef diver. Suspicious traffic has been captured. Read the packet details and select the correct Wireshark display filter to isolate the threat. You have time — study the packet carefully.",
+    warn:"// 30s PER LEVEL  //  4 FILTER CHOICES  //  FULL PACKET DETAILS VISIBLE",
+    timerSec:30, choiceCount:4, packetSpeed:0.6,
+    levels:[
+      {
+        mission:"1-1 — Block HTTP credential harvest",
+        hint:"A device on your network is sending login data in plaintext over HTTP (port 80). Wireshark filter syntax for HTTP traffic is simply 'http'. The source IP and destination confirm an internal machine talking to an external server.",
+        packetFn: ()=>{ const src=rip(), dst=ip(); return {
+          proto:"HTTP", src, dst, sport:ri(30000)+1024, dport:80, size:842+ri(200),
+          info:"POST /login.php — credentials in plaintext",
+          flags:["PSH","ACK"], severity:"HIGH",
+          extra:{"Content-Type":"application/x-www-form-urlencoded","Body":"user=admin&pass=hunter2"}
+        }},
+        correctFilter: ()=>"http",
+        correctDesc: "HTTP traffic — isolates all plaintext web requests",
+        decoys: [
+          {cmd:"dns",       desc:"DNS queries — name resolution only"},
+          {cmd:"tcp.port==443", desc:"HTTPS traffic — encrypted web (wrong port)"},
+          {cmd:"icmp",      desc:"ICMP ping/traceroute traffic"}
+        ]
+      },
+      {
+        mission:"1-2 — Intercept DNS tunneling exfil",
+        hint:"Repeated DNS queries to unusual subdomains suggest DNS tunneling — a technique where data is smuggled inside DNS requests to bypass firewalls. The destination port 53 confirms DNS. Filter with 'dns' to see all name-resolution traffic.",
+        packetFn: ()=>{ const src=rip(), dst="8.8.8.8"; return {
+          proto:"DNS", src, dst, sport:ri(20000)+1024, dport:53, size:128+ri(60),
+          info:`Query: ${Math.random().toString(36).slice(2,10)}.exfil-c2.net (TXT)`,
+          flags:["UDP"], severity:"HIGH",
+          extra:{"Query-Type":"TXT","Response":"dGhpcyBpcyBleGZpbA==","Decoded":"[base64 encoded payload]"}
+        }},
+        correctFilter: ()=>"dns",
+        correctDesc: "DNS traffic — name resolution queries and responses",
+        decoys: [
+          {cmd:"udp.port==123", desc:"NTP time sync — UDP port 123"},
+          {cmd:"http",          desc:"HTTP web traffic — port 80 only"},
+          {cmd:"tcp.port==53",  desc:"TCP DNS — wrong transport (should be UDP)"}
+        ]
+      },
+      {
+        mission:"1-3 — Catch a TCP SYN port scan",
+        hint:"A burst of TCP SYN packets with no corresponding ACK responses is a classic port scan. The attacker is probing which ports are open. Filter 'tcp' to see all TCP segments, or 'tcp.flags.syn==1' to isolate SYN-only packets.",
+        packetFn: ()=>{ const src=ip(), dst=rip(); return {
+          proto:"TCP", src, dst, sport:ri(50000)+1024, dport:ri(1024), size:54,
+          info:"SYN scan — no ACK response (port probe)",
+          flags:["SYN"], severity:"MEDIUM",
+          extra:{"Window-Size":"1024","TTL":"64","Sequence":"0","Acknowledgment":"0"}
+        }},
+        correctFilter: ()=>"tcp.flags.syn==1 && !tcp.flags.ack==1",
+        correctDesc: "TCP SYN-only — port scan (SYN with no ACK = half-open probe)",
+        decoys: [
+          {cmd:"tcp",                    desc:"All TCP — includes legitimate connections too"},
+          {cmd:"tcp.flags.fin==1",       desc:"TCP FIN — connection teardown, not a scan"},
+          {cmd:"udp",                    desc:"UDP traffic — wrong protocol entirely"}
+        ]
+      },
+      {
+        mission:"1-4 — Isolate malware C2 beacon",
+        hint:"Malware beacons call home to a Command & Control server at regular intervals. The destination is an external IP on an unusual port. The repeating pattern every ~10 seconds is the signature. Filter by destination IP to track this specific connection.",
+        packetFn: ()=>{ const src=rip(), dst=ip(), dport=4444+ri(3000); return {
+          proto:"TCP", src, dst, sport:ri(20000)+1024, dport, size:512+ri(200),
+          info:`Encrypted C2 beacon → ${dst}:${dport} every 10s`,
+          flags:["PSH","ACK"], severity:"CRITICAL",
+          extra:{"Interval":"10s ±2s jitter","Payload":"[AES-256 encrypted]","Direction":"Outbound"}
+        }},
+        correctFilter: (p)=>`ip.dst==${p.dst}`,
+        correctDesc: (p)=>`ip.dst==${p.dst} — filter by C2 server IP`,
+        decoys: [
+          {cmd:"tcp.port==80", desc:"HTTP on port 80 — wrong port"},
+          {cmd:"ip.src==192.168.1.1", desc:"Filter by router IP — not the C2 target"},
+          {cmd:"dns", desc:"DNS queries — unrelated protocol"}
+        ]
+      },
+      {
+        mission:"1-5 — BOSS: Flag suspicious encoded payload",
+        hint:"An internal host is sending base64-encoded data to an external server on a non-standard port. This is a data exfiltration attempt. The unusual destination port (not 80 or 443) is the key indicator. Filter by port to isolate this channel.",
+        packetFn: ()=>{ const src=rip(), dst=ip(), dport=6666+ri(1000); return {
+          proto:"TCP", src, dst, sport:ri(20000)+1024, dport, size:768+ri(300),
+          info:`Encoded payload → non-standard port ${dport}`,
+          flags:["PSH","ACK"], severity:"CRITICAL",
+          extra:{"Encoding":"Base64","Content":"dGhpcyBpcyBleGZpbHRyYXRlZCBkYXRh","Decoded":"[sensitive data exfil]"}
+        }},
+        correctFilter: (p)=>`tcp.port==${p.dport}`,
+        correctDesc: (p)=>`tcp.port==${p.dport} — isolate unusual destination port`,
+        decoys: [
+          {cmd:"tcp.port==443", desc:"HTTPS port 443 — wrong port"},
+          {cmd:"http", desc:"HTTP — wrong protocol (this is raw TCP)"},
+          {cmd:"ip.dst==8.8.8.8", desc:"Google DNS IP — not the attacker"}
+        ]
+      }
+    ]
+  },
+
+  // ── TIER 2: ANALYST ── faster timer, more complex filters, same 4 choices
+  {
+    id:2, name:"TIER 2 — ANALYST", color:"#ff9933",
+    sub:"The attacks are faster and more sophisticated. Filters now include IP addresses, port numbers, and protocol flags. You must read the packet carefully — the correct filter requires matching specific fields. Timer is tighter.",
+    warn:"// 20s PER LEVEL  //  COMPLEX FILTER SYNTAX  //  FASTER SHARK",
+    timerSec:20, choiceCount:4, packetSpeed:1.5,
+    levels:[
+      {
+        mission:"2-1 — Block HTTPS data exfil on port 443",
+        hint:"Traffic on port 443 is usually HTTPS, but this volume at this interval is abnormal. Use 'tcp.port==443 && ip.src==[src]' to isolate this specific host's encrypted outbound traffic. Matching both protocol and source is essential.",
+        packetFn: ()=>{ const src=rip(), dst=ip(); return {
+          proto:"TLS/HTTPS", src, dst, sport:ri(20000)+1024, dport:443, size:1400+ri(400),
+          info:`Abnormal volume HTTPS → ${dst}:443 (possible encrypted exfil)`,
+          flags:["PSH","ACK"], severity:"HIGH",
+          extra:{"TLS-Version":"1.3","SNI":"cdn-relay.suspic.io","Volume":"22 MB in 60s"}
+        }},
+        correctFilter: (p)=>`tcp.port==443 && ip.src==${p.src}`,
+        correctDesc: (p)=>`tcp.port==443 && ip.src==${p.src} — HTTPS from suspect host`,
+        decoys: [
+          {cmd:(p)=>`tcp.port==443`, desc:"All HTTPS — too broad, misses source filter"},
+          {cmd:(p)=>`ip.dst==${p.dst}`, desc:"Filter by destination — misses protocol"},
+          {cmd:(p)=>`tcp.port==80 && ip.src==${p.src}`, desc:"HTTP (port 80) not HTTPS (443)"}
+        ]
+      },
+      {
+        mission:"2-2 — Pinpoint DNS exfil source host",
+        hint:"DNS tunneling from a specific internal host. You need to filter by BOTH protocol (dns) AND the source IP to identify the infected machine precisely. 'dns && ip.src==[src]' isolates only that machine's DNS traffic.",
+        packetFn: ()=>{ const src=rip(), dst="8.8.4.4"; return {
+          proto:"DNS", src, dst, sport:ri(20000)+1024, dport:53, size:180+ri(80),
+          info:`High-frequency TXT queries from ${src} → DNS tunnel suspected`,
+          flags:["UDP"], severity:"HIGH",
+          extra:{"Query-Rate":"40/min","Query-Type":"TXT","Domain":"c2.attacker-domain.net"}
+        }},
+        correctFilter: (p)=>`dns && ip.src==${p.src}`,
+        correctDesc: (p)=>`dns && ip.src==${p.src} — DNS from specific infected host`,
+        decoys: [
+          {cmd:(p)=>`dns`, desc:"All DNS — includes other machines, too broad"},
+          {cmd:(p)=>`udp.port==53 && ip.dst==${p.dst}`, desc:"Correct port but wrong IP direction"},
+          {cmd:(p)=>`ip.src==${p.src}`, desc:"Source IP only — too broad, no protocol filter"}
+        ]
+      },
+      {
+        mission:"2-3 — Detect SYN flood from attacker IP",
+        hint:"A SYN flood is sending thousands of TCP connection requests with no intent to complete the handshake, exhausting server resources. You must filter SYN-only packets from the specific attacker IP. Both conditions are needed.",
+        packetFn: ()=>{ const src=ip(), dst=rip(); return {
+          proto:"TCP", src, dst, sport:ri(60000)+1024, dport:80, size:54,
+          info:`SYN flood: ${src} → ${dst}:80 (10k packets/sec, no ACK)`,
+          flags:["SYN"], severity:"CRITICAL",
+          extra:{"Rate":"10,000 SYN/sec","ACK-Count":"0","Server-Status":"Connection table 98% full"}
+        }},
+        correctFilter: (p)=>`tcp.flags.syn==1 && ip.src==${p.src}`,
+        correctDesc: (p)=>`tcp.flags.syn==1 && ip.src==${p.src} — SYN flood from attacker`,
+        decoys: [
+          {cmd:(p)=>`tcp && ip.src==${p.src}`, desc:"All TCP from that IP — includes valid traffic"},
+          {cmd:(p)=>`tcp.flags.syn==1`, desc:"All SYN packets — doesn't isolate the attacker"},
+          {cmd:(p)=>`ip.src==${p.src} && tcp.port==443`, desc:"HTTPS from that IP — wrong port"}
+        ]
+      },
+      {
+        mission:"2-4 — Track C2 beacon by IP and port",
+        hint:"You've identified the C2 server IP and beacon port from previous logs. The most surgical Wireshark filter uses both the destination IP and destination port: 'ip.dst==[dst] && tcp.dstport==[port]'. This eliminates any false positives.",
+        packetFn: ()=>{ const src=rip(), dst=ip(), dport=2222+ri(5000); return {
+          proto:"TCP", src, dst, sport:ri(20000)+1024, dport, size:600+ri(300),
+          info:`C2 beacon: ${src} → ${dst}:${dport} (encrypted, interval 8s)`,
+          flags:["PSH","ACK"], severity:"CRITICAL",
+          extra:{"C2-IP":dst,"Beacon-Port":dport,"Payload":"[RC4 encrypted]","Persistence":"Registry run key"}
+        }},
+        correctFilter: (p)=>`ip.dst==${p.dst} && tcp.dstport==${p.dport}`,
+        correctDesc: (p)=>`ip.dst==${p.dst} && tcp.dstport==${p.dport} — exact C2 target`,
+        decoys: [
+          {cmd:(p)=>`ip.dst==${p.dst}`, desc:"Destination IP only — misses port specificity"},
+          {cmd:(p)=>`tcp.port==${p.dport}`, desc:"Port only — doesn't confirm the C2 IP"},
+          {cmd:(p)=>`ip.src==${p.src} && tcp.port==443`, desc:"Source IP + HTTPS — wrong direction and port"}
+        ]
+      },
+      {
+        mission:"2-5 — BOSS: ARP spoofing on LAN",
+        hint:"ARP spoofing poisons the local network's MAC-to-IP mapping table, enabling man-in-the-middle attacks. ARP does not use IP or TCP — it's a Layer 2 protocol. The Wireshark filter is simply 'arp'. Look at the opcode: Reply (2) = spoofing.",
+        packetFn: ()=>{ const src=rip(); return {
+          proto:"ARP", src, dst:"(broadcast)", sport:"—", dport:"—", size:42,
+          info:`ARP Reply: "192.168.1.1 is at AA:BB:CC:00:11:22" (spoofed — gateway MAC changed)`,
+          flags:["ARP-REPLY"], severity:"CRITICAL",
+          extra:{"Opcode":"2 (Reply)","Sender-MAC":"AA:BB:CC:00:11:22","Target-IP":"192.168.1.1","Note":"Gateway MAC overwritten — MITM active"}
+        }},
+        correctFilter: ()=>`arp`,
+        correctDesc: "arp — Layer 2 ARP traffic (spoofing/poisoning detection)",
+        decoys: [
+          {cmd:"tcp", desc:"TCP — ARP is Layer 2, has no TCP"},
+          {cmd:"icmp", desc:"ICMP — ping traffic, not ARP"},
+          {cmd:"ip", desc:"IP traffic — ARP is pre-IP (Layer 2 only)"}
+        ]
+      }
+    ]
+  },
+
+  // ── TIER 3: THREAT HUNTER ── very fast, complex multi-condition filters
+  {
+    id:3, name:"TIER 3 — THREAT HUNTER", color:"#ff3355",
+    sub:"APT-level intrusions. The shark moves faster than you can think. Filters require 3 or more conditions. Read the packet, understand what makes it unique, and select the only filter that captures exactly this threat — nothing more, nothing less.",
+    warn:"// 15s PER LEVEL  //  3+ CONDITION FILTERS  //  MAXIMUM SHARK SPEED  //  NO HINTS ON WRONG ANSWER",
+    timerSec:15, choiceCount:4, packetSpeed:2.8,
+    levels:[
+      {
+        mission:"3-1 — Surgical HTTPS exfil: IP + port + size",
+        hint:"Large payloads (>1400 bytes) on HTTPS from one host to an unusual external IP. Use all three conditions: source IP, destination port, AND frame length threshold. This is the most precise filter available.",
+        packetFn: ()=>{ const src=rip(), dst=ip(); return {
+          proto:"TLS/HTTPS", src, dst, sport:ri(20000)+1024, dport:443, size:1480+ri(200),
+          info:`Large encrypted payload from ${src} → ${dst}:443 (>1400 bytes, abnormal)`,
+          flags:["PSH","ACK"], severity:"CRITICAL",
+          extra:{"Frame-Length":"1480+ bytes","TLS-SNI":"update.malicious-cdn.net","Note":"Exfil via chunked large frames"}
+        }},
+        correctFilter: (p)=>`ip.src==${p.src} && tcp.dstport==443 && frame.len>${p.size-100}`,
+        correctDesc: (p)=>`ip.src==${p.src} && tcp.dstport==443 && frame.len>${p.size-100}`,
+        decoys: [
+          {cmd:(p)=>`tcp.port==443 && ip.src==${p.src}`, desc:"Missing frame size condition — too broad"},
+          {cmd:(p)=>`ip.dst==${p.dst} && tcp.port==443`, desc:"Dest IP + port — misses source and size"},
+          {cmd:(p)=>`frame.len>${p.size-100}`, desc:"Frame size only — captures many unrelated large packets"}
+        ]
+      },
+      {
+        mission:"3-2 — DNS exfil: source + query rate anomaly",
+        hint:"High-frequency TXT queries from a single host to a single nameserver. The filter must pin the source host, the DNS protocol, AND the nameserver destination. Three conditions — all required to uniquely identify this tunnel.",
+        packetFn: ()=>{ const src=rip(), dst="185."+ri(200)+"."+ri(200)+"."+ri(200); return {
+          proto:"DNS", src, dst, sport:ri(30000)+1024, dport:53, size:160+ri(80),
+          info:`DNS tunnel: ${src} → ${dst}:53 (TXT records, 40+ queries/min)`,
+          flags:["UDP"], severity:"CRITICAL",
+          extra:{"Query-Type":"TXT","Nameserver":dst,"Rate":"40+ req/min","Entropy":"High (encoded data)"}
+        }},
+        correctFilter: (p)=>`dns && ip.src==${p.src} && ip.dst==${p.dst}`,
+        correctDesc: (p)=>`dns && ip.src==${p.src} && ip.dst==${p.dst} — tunnel pinned`,
+        decoys: [
+          {cmd:(p)=>`dns && ip.src==${p.src}`, desc:"Source + DNS — missing nameserver destination"},
+          {cmd:(p)=>`udp.port==53 && ip.dst==${p.dst}`, desc:"Port + dest — missing source host"},
+          {cmd:(p)=>`dns`, desc:"All DNS — far too broad for APT attribution"}
+        ]
+      },
+      {
+        mission:"3-3 — SYN flood: attacker IP + victim port + flag",
+        hint:"To precisely block a SYN flood, you must match: the source attacker IP, the destination port being targeted, AND the TCP SYN flag. Any filter missing a condition will capture legitimate traffic or miss the attacker.",
+        packetFn: ()=>{ const src=ip(), dst=rip(), dport=[80,443,22,3306][ri(4)]; return {
+          proto:"TCP", src, dst, sport:ri(60000)+1024, dport, size:54,
+          info:`SYN flood: ${src} → ${dst}:${dport} (15k SYN/sec, zero ACK)`,
+          flags:["SYN"], severity:"CRITICAL",
+          extra:{"Target-Port":dport,"Rate":"15,000/sec","ACK-ratio":"0%","Spoofed-Source":"Partially (bonet)"}
+        }},
+        correctFilter: (p)=>`tcp.flags.syn==1 && ip.src==${p.src} && tcp.dstport==${p.dport}`,
+        correctDesc: (p)=>`tcp.flags.syn==1 && ip.src==${p.src} && tcp.dstport==${p.dport}`,
+        decoys: [
+          {cmd:(p)=>`tcp.flags.syn==1 && ip.src==${p.src}`, desc:"SYN + source — missing victim port"},
+          {cmd:(p)=>`ip.src==${p.src} && tcp.dstport==${p.dport}`, desc:"Source + port — missing SYN flag check"},
+          {cmd:(p)=>`tcp.flags.syn==1 && tcp.dstport==${p.dport}`, desc:"SYN + port — missing attacker IP"}
+        ]
+      },
+      {
+        mission:"3-4 — C2 beacon: IP + port + payload size",
+        hint:"APT C2 beacons use consistent payload sizes to blend in. The most surgical filter uses: destination IP, destination port, AND a frame length range. This catches the beacon while ignoring other traffic to the same server.",
+        packetFn: ()=>{ const src=rip(), dst=ip(), dport=3000+ri(5000), sz=400+ri(200); return {
+          proto:"TCP", src, dst, sport:ri(20000)+1024, dport, size:sz,
+          info:`APT beacon: ${src}→${dst}:${dport} (~${sz}B payload, interval 15s)`,
+          flags:["PSH","ACK"], severity:"CRITICAL",
+          extra:{"C2":dst+":"+dport,"Payload-Size":sz+"B ±5B","Cipher":"ChaCha20","Interval":"15s"}
+        }},
+        correctFilter: (p)=>`ip.dst==${p.dst} && tcp.dstport==${p.dport} && frame.len==${p.size}`,
+        correctDesc: (p)=>`ip.dst==${p.dst} && tcp.dstport==${p.dport} && frame.len==${p.size}`,
+        decoys: [
+          {cmd:(p)=>`ip.dst==${p.dst} && tcp.dstport==${p.dport}`, desc:"IP + port — missing payload size (too broad)"},
+          {cmd:(p)=>`ip.dst==${p.dst} && frame.len==${p.size}`, desc:"IP + size — missing port specification"},
+          {cmd:(p)=>`tcp.dstport==${p.dport} && frame.len==${p.size}`, desc:"Port + size — missing C2 destination IP"}
+        ]
+      },
+      {
+        mission:"3-5 — FINAL BOSS: Full APT exfil signature",
+        hint:"Nation-state exfiltration. The filter must match ALL of: source host, destination IP, destination port, transport protocol (TCP), AND a minimum frame length. Miss one condition and you either miss the threat or contaminate evidence. Five conditions. Fifteen seconds.",
+        packetFn: ()=>{ const src=rip(), dst=ip(), dport=8443+ri(2000), sz=900+ri(400); return {
+          proto:"TCP/TLS", src, dst, sport:ri(20000)+1024, dport, size:sz,
+          info:`APT EXFIL: ${src}→${dst}:${dport} [CLASSIFIED DATA — ${sz}B encrypted]`,
+          flags:["PSH","ACK"], severity:"CRITICAL",
+          extra:{"Classification":"TOP SECRET","Exfil-Volume":"4.2 GB","C2-Geo":"Unknown","Method":"Custom TLS over non-standard port"}
+        }},
+        correctFilter: (p)=>`tcp && ip.src==${p.src} && ip.dst==${p.dst} && tcp.dstport==${p.dport} && frame.len>=${p.size-50}`,
+        correctDesc: (p)=>`tcp && ip.src==${p.src} && ip.dst==${p.dst} && tcp.dstport==${p.dport} && frame.len>=${p.size-50}`,
+        decoys: [
+          {cmd:(p)=>`ip.src==${p.src} && ip.dst==${p.dst} && tcp.dstport==${p.dport}`, desc:"3 conditions — missing TCP proto and frame size"},
+          {cmd:(p)=>`tcp && ip.src==${p.src} && ip.dst==${p.dst} && tcp.dstport==${p.dport}`, desc:"4 conditions — missing frame length threshold"},
+          {cmd:(p)=>`tcp && ip.dst==${p.dst} && tcp.dstport==${p.dport} && frame.len>=${p.size-50}`, desc:"4 conditions — missing source IP confirmation"}
+        ]
+      }
+    ]
+  }
+]
+
+// ─────────────────────────────────────────────────────────────
+// GAME STATE
+// ─────────────────────────────────────────────────────────────
+let tierIdx=0, levelIdx=0
+let timerInterval=null, timerLeft=0
+let totalScore=0
+let currentPacket=null
+let answered=false
+
+const tier = () => TIER_DEFS[tierIdx]
+const lv   = () => TIER_DEFS[tierIdx].levels[levelIdx]
+
+// ─────────────────────────────────────────────────────────────
+// TIER STRIP
+// ─────────────────────────────────────────────────────────────
+function renderStrip() {
+  const s = document.getElementById("tierStrip"); s.innerHTML=''
+  for(let t=0;t<3;t++){
+    for(let l=0;l<5;l++){
+      const pip=document.createElement('div'); pip.className='tier-pip'
+      const g=t*5+l, cur=tierIdx*5+levelIdx
+      if(g<cur){ pip.style.background=TIER_DEFS[t].color; pip.style.boxShadow=`0 0 4px ${TIER_DEFS[t].color}` }
+      else if(g===cur){ pip.style.background=TIER_DEFS[t].color; pip.style.boxShadow=`0 0 8px ${TIER_DEFS[t].color}`; pip.classList.add('active') }
+      s.appendChild(pip)
+    }
+    if(t<2){const sep=document.createElement('div');sep.style.cssText='width:4px;flex:none';s.appendChild(sep)}
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// RENDER LEVEL
+// ─────────────────────────────────────────────────────────────
+function renderLevel() {
+  answered = false
+  sharkX = 0; sharkTarget = 0; sharkBlocked=false; sharkFleeing=false
+
+  const t=tier(), l=lv()
+  // Generate packet
+  currentPacket = l.packetFn()
+
+  // Header
+  document.getElementById("levelCounter").textContent=`LVL ${tierIdx*5+levelIdx+1}/15`
+  document.getElementById("tierBadge").textContent=`TIER ${t.id}`
+  document.getElementById("tierBadge").style.color=t.color
+  document.getElementById("tierBadge").style.borderColor=t.color+'55'
+
+  // Mechanic
+  const mechs=[`⏱ ${t.timerSec}s`,`🦈 SPEED x${t.packetSpeed}`]
+  if(tierIdx>=2) mechs.push('⚠ NO HINTS ON WRONG')
+  document.getElementById("mechanic").textContent='// '+mechs.join('  //  ')
+
+  // Packet display
+  const p=currentPacket
+  const sevColor = p.severity==='CRITICAL'?'danger':p.severity==='HIGH'?'warn':'ok'
+  let html=`<div class="prow">
+    <span><span class="pk">PROTO </span><span class="pv">${p.proto}</span></span>
+    <span><span class="pk">SRC </span><span class="pv">${p.src}:${p.sport}</span></span>
+    <span><span class="pk">DST </span><span class="pv">${p.dst}:${p.dport}</span></span>
+    <span><span class="pk">SIZE </span><span class="pv">${p.size}B</span></span>
+    <span><span class="pk">FLAGS </span><span class="pv">[${p.flags.join('][')}]</span></span>
+    <span><span class="pk">SEVERITY </span><span class="pv ${sevColor}">${p.severity}</span></span>
+  </div>
+  <div style="margin-top:4px;color:#7ab8cc;font-size:10px">INFO: ${p.info}</div>`
+  if(p.extra){
+    html+='<div style="margin-top:4px;display:flex;flex-wrap:wrap;gap:4px 12px">'
+    for(const[k,v] of Object.entries(p.extra)){
+      html+=`<span><span class="pk">${k} </span><span style="color:#5ab0d0">${v}</span></span>`
+    }
+    html+='</div>'
+  }
+  document.getElementById("packetDisplay").innerHTML=html
+  document.getElementById("alertBox").style.borderLeftColor=
+    p.severity==='CRITICAL'?'var(--danger)':p.severity==='HIGH'?'var(--yellow)':'var(--green)'
+
+  // Hint
+  document.getElementById("hintBox").textContent=l.hint
+
+  // Build choices
+  const correctF = typeof l.correctFilter==='function' ? l.correctFilter(p) : l.correctFilter
+  const correctD = typeof l.correctDesc==='function'   ? l.correctDesc(p)   : l.correctDesc
+
+  // Build decoy options (resolve functions against packet)
+  const decoyChoices = l.decoys.map(d=>({
+    cmd: typeof d.cmd==='function' ? d.cmd(p) : d.cmd,
+    desc: d.desc
+  }))
+
+  // Shuffle all options
+  const allChoices = [
+    {cmd:correctF, desc:correctD, correct:true},
+    ...decoyChoices.map(d=>({...d,correct:false}))
+  ].sort(()=>Math.random()-0.5)
+
+  const choicesEl=document.getElementById("choices"); choicesEl.innerHTML=''
+  allChoices.forEach(ch=>{
+    const btn=document.createElement('button')
+    btn.className='choice-btn'
+    btn.innerHTML=`<span class="cmd">${ch.cmd}</span><span class="desc">// ${ch.desc}</span>`
+    btn.onclick=()=>selectChoice(btn, ch.correct, correctF)
+    choicesEl.appendChild(btn)
+  })
+
+  document.getElementById("message").textContent=''
+  document.getElementById("message").className=''
+
+  // Timer
+  startAttackTimer()
+  renderStrip()
+}
+
+// ─────────────────────────────────────────────────────────────
+// ATTACK TIMER (drives shark)
+// ─────────────────────────────────────────────────────────────
+function startAttackTimer() {
+  clearInterval(timerInterval)
+  timerLeft = tier().timerSec
+  updateAttackBar()
+  timerInterval=setInterval(()=>{
+    if(answered) return
+    timerLeft--
+    updateAttackBar()
+    // Move shark proportionally
+    sharkTarget = 1 - (timerLeft/tier().timerSec)
+    if(timerLeft<=0){
+      clearInterval(timerInterval)
+      sharkTarget=1
+      shakeFrames=20
+      // spawn blood
+      const diverX=W-40, diverY=H*0.48
+      for(let i=0;i<30;i++) bloodParticles.push({
+        x:diverX, y:diverY, vx:(Math.random()-0.5)*6, vy:(Math.random()-0.5)*5-2,
+        r:2+Math.random()*3, life:100
+      })
+      document.getElementById("gameOverMsg").textContent=`The shark reached the diver on Level ${tierIdx*5+levelIdx+1}. Wireshark filter not entered in time.`
+      setTimeout(()=>{ document.getElementById("gameOver").style.display="flex" },800)
+    }
+  },1000)
+}
+
+function updateAttackBar() {
+  const pct=(timerLeft/tier().timerSec)*100
+  document.getElementById("attackFill").style.width=pct+'%'
+  const color = pct>60?'var(--green)':pct>30?'var(--yellow)':'var(--danger)'
+  document.getElementById("attackFill").style.boxShadow=`0 0 8px ${color}`
+  document.getElementById("attackLabel").style.color = pct>60?'var(--text-dim)':pct>30?'var(--yellow)':'var(--danger)'
+}
+
+// ─────────────────────────────────────────────────────────────
+// CHOICE SELECTION
+// ─────────────────────────────────────────────────────────────
+function selectChoice(btn, correct, correctFilter) {
+  if(answered) return
+  answered=true
+  clearInterval(timerInterval)
+
+  // Disable all buttons
+  document.querySelectorAll('.choice-btn').forEach(b=>b.disabled=true)
+
+  if(correct){
+    btn.classList.add('correct')
+    totalScore += Math.max(10, timerLeft * (tierIdx+1) * 8)
+    // Shark flees
+    sharkFleeing=true
+    sharkFleeX = sharkX * (W-120) + 30
+    showMsg('✓ FILTER APPLIED — SHARK REPELLED — DIVER SAFE','msg-success')
+    setTimeout(advanceLevel, 1600)
+  } else {
+    btn.classList.add('wrong')
+    // Highlight correct
+    document.querySelectorAll('.choice-btn').forEach(b=>{
+      if(b.querySelector('.cmd').textContent===correctFilter) b.classList.add('correct')
+    })
+    // Shark lunges forward, then retreats
+    sharkTarget = Math.min(1, sharkX + 0.3)
+    shakeFrames=12
+    if(tierIdx<2){
+      showMsg('✗ WRONG FILTER — SHARK LUNGED — STUDY THE CORRECT ANSWER','msg-fail')
+    } else {
+      showMsg('✗ WRONG FILTER — ADVANCING ANYWAY (TIER 3: NO RETRY)','msg-fail')
+    }
+    setTimeout(advanceLevel, 2200)
+  }
+}
+
+function showMsg(t,c){const m=document.getElementById("message");m.textContent=t;m.className=c}
+
+// ─────────────────────────────────────────────────────────────
+// ADVANCE
+// ─────────────────────────────────────────────────────────────
+function advanceLevel() {
+  levelIdx++
+  if(levelIdx>=5){
+    tierIdx++; levelIdx=0
+    if(tierIdx>=3){
+      document.getElementById("finalScore").textContent=`SCORE: ${totalScore} pts`
+      document.getElementById("complete").style.display="flex"
+      return
+    }
+    showTierScreen()
+  } else { renderLevel() }
+}
+
+function restartLevel() {
+  document.getElementById("gameOver").style.display="none"
+  bloodParticles=[]
+  renderLevel()
+}
+
+// ─────────────────────────────────────────────────────────────
+// TIER SCREEN
+// ─────────────────────────────────────────────────────────────
+function showTierScreen() {
+  const t=TIER_DEFS[tierIdx]
+  document.getElementById("tierTitle").textContent=t.name
+  document.getElementById("tierTitle").style.color=t.color
+  document.getElementById("tierSub").textContent=t.sub
+  document.getElementById("tierWarn").textContent=t.warn
+  document.getElementById("tierContinue").style.borderColor=t.color
+  document.getElementById("tierContinue").style.color=t.color
+  document.getElementById("tierScreen").style.display="flex"
+}
+
+function startTier() {
+  document.getElementById("tierScreen").style.display="none"
+  renderLevel()
+}
+
+// ─────────────────────────────────────────────────────────────
+// DRAW LOOP
+// ─────────────────────────────────────────────────────────────
+function gameLoop() {
+  drawScene()
+  requestAnimationFrame(gameLoop)
+}
+
+// ─────────────────────────────────────────────────────────────
+// BOOT
+// ─────────────────────────────────────────────────────────────
+renderStrip()
+showTierScreen()
+gameLoop()
+</script>
+</body>
+</html>
