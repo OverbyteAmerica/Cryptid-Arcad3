@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cyber Defense Timer</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #000;
+            color: #0ff;
+            overflow: hidden;
+            height: 100vh;
+            height: 100dvh;
+        }
+
+        .container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+        }
+
+        #matrix-canvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 1;
+            opacity: 0.2;
+        }
+
+        .video-background {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 2;
+            overflow: hidden;
+        }
+
+        .video-background video {
+            width: 100%; height: 100%;
+            object-fit: cover;
+            opacity: 0.4;
+        }
+
+        .timer-box {
+            position: relative;
+            z-index: 10;
+            background: rgba(0,0,0,0.95);
+            border: 3px solid #0ff;
+            padding: clamp(1.5rem, 5vw, 4rem) clamp(1.5rem, 8vw, 6rem);
+            box-shadow: 0 0 40px rgba(0,255,255,0.8), 0 0 80px rgba(0,255,255,0.4);
+            text-align: center;
+            transition: all 0.5s ease;
+            border-radius: 10px;
+            transform: scale(0);
+            opacity: 0;
+            width: min(90vw, 600px);
+        }
+
+        .timer-box.active {
+            transform: scale(1);
+            opacity: 1;
+            animation: popupBounce 0.6s cubic-bezier(0.68,-0.55,0.265,1.55);
+        }
+
+        @keyframes popupBounce {
+            0%   { transform: scale(0); opacity: 0; }
+            50%  { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .popup-header {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            background: rgba(0,255,255,0.1);
+            border-bottom: 2px solid #0ff;
+            padding: 0.8rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .popup-title {
+            font-size: clamp(0.65rem, 2.5vw, 0.9rem);
+            text-transform: uppercase;
+            letter-spacing: 0.15rem;
+            opacity: 0.9;
+        }
+
+        .popup-controls { display: flex; gap: 0.5rem; }
+
+        .popup-button {
+            width: 16px; height: 16px;
+            border-radius: 50%;
+            border: 1px solid #0ff;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .popup-button.minimize { background: rgba(0,255,255,0.3); }
+        .popup-button.close    { background: rgba(255,0,0,0.3); border-color: #ff0040; }
+        .popup-button:hover    { transform: scale(1.2); box-shadow: 0 0 10px currentColor; }
+
+        .timer-content { padding-top: 3rem; }
+
+        .status-text {
+            font-size: clamp(0.7rem, 2.5vw, 1.1rem);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.15rem;
+            opacity: 0.9;
+        }
+
+        .timer-display {
+            font-size: clamp(4rem, 18vw, 9rem);
+            font-weight: bold;
+            color: #0ff;
+            text-shadow: 0 0 40px #0ff, 0 0 80px #0ff, 0 0 120px #0ff;
+            letter-spacing: 0.4rem;
+            transition: all 0.5s ease;
+        }
+
+        .control-menu {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            background: rgba(0,0,0,0.95);
+            border-top: 2px solid #0ff;
+            padding: clamp(0.6rem, 2vw, 1.5rem) clamp(0.5rem, 2vw, 2rem);
+            z-index: 20;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: clamp(0.4rem, 1.5vw, 1.5rem);
+        }
+
+        .menu-section {
+            display: flex;
+            gap: 0.4rem;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .menu-label {
+            font-size: clamp(0.6rem, 2vw, 0.8rem);
+            text-transform: uppercase;
+            letter-spacing: 0.1rem;
+            opacity: 0.7;
+        }
+
+        button {
+            background: transparent;
+            border: 2px solid #0ff;
+            color: #0ff;
+            padding: clamp(0.4rem, 1.5vw, 0.7rem) clamp(0.5rem, 2vw, 1.5rem);
+            font-family: 'Courier New', monospace;
+            font-size: clamp(0.6rem, 2.5vw, 0.85rem);
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 0.1rem;
+            transition: all 0.3s;
+            touch-action: manipulation;
+        }
+
+        button:hover, button:active { background: #0ff; color: #000; box-shadow: 0 0 15px #0ff; }
+        button:active { transform: scale(0.95); }
+
+        input[type="number"] {
+            background: rgba(0,0,0,0.8);
+            border: 2px solid #0ff;
+            color: #0ff;
+            padding: clamp(0.35rem, 1.5vw, 0.7rem);
+            font-family: 'Courier New', monospace;
+            font-size: clamp(0.7rem, 2.5vw, 0.9rem);
+            width: clamp(48px, 11vw, 70px);
+            text-align: center;
+            -webkit-appearance: none;
+        }
+
+        input[type="number"]:focus { outline: none; box-shadow: 0 0 10px #0ff; }
+
+        select {
+            background: rgba(0,0,0,0.9);
+            border: 2px solid #0ff;
+            color: #0ff;
+            padding: clamp(0.35rem, 1.5vw, 0.7rem) clamp(0.4rem, 1.5vw, 1rem);
+            font-family: 'Courier New', monospace;
+            font-size: clamp(0.6rem, 2.5vw, 0.85rem);
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+
+        select:focus { outline: none; box-shadow: 0 0 10px #0ff; }
+
+        .video-indicator {
+            position: fixed;
+            top: 1rem; left: 1rem;
+            z-index: 15;
+            background: rgba(0,0,0,0.9);
+            border: 1px solid #0ff;
+            padding: 0.5rem 0.8rem;
+            font-size: clamp(0.6rem, 2vw, 0.75rem);
+            text-transform: uppercase;
+            letter-spacing: 0.1rem;
+            opacity: 0.7;
+        }
+
+        .theme-selector {
+            position: fixed;
+            top: 1rem; right: 1rem;
+            z-index: 15;
+        }
+
+        @media (max-width: 600px) {
+            .control-menu {
+                flex-direction: column;
+                gap: 0.4rem;
+                padding: 0.6rem 0.5rem;
+            }
+            .menu-section { width: 100%; justify-content: center; }
+            .video-indicator { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="theme-selector">
+        <select id="themeSelect" onchange="changeTheme(this.value)">
+            <option value="blue-matrix">Blue Matrix</option>
+            <option value="green-terminal">Green Terminal</option>
+            <option value="purple-neon">Purple Neon</option>
+            <option value="orange-alert">Orange Alert</option>
+        </select>
+    </div>
+
+    <div class="video-indicator">🎬 Defense Tactics Video</div>
+
+    <audio id="music-player" loop style="display:none;"><source src="" type="audio/mpeg"></audio>
+
+    <div class="container">
+        <canvas id="matrix-canvas"></canvas>
+        <div class="video-background">
+            <video autoplay loop muted playsinline>
+                <source src="defense-tactics.mp4" type="video/mp4">
+            </video>
+        </div>
+
+        <div class="timer-box" id="timerBox">
+            <div class="popup-header">
+                <div class="popup-title">⏰ Meeting Timer</div>
+                <div class="popup-controls">
+                    <div class="popup-button minimize" onclick="minimizeTimer()" title="Minimize"></div>
+                    <div class="popup-button close" onclick="closeTimer()" title="Close"></div>
+                </div>
+            </div>
+            <div class="timer-content">
+                <div class="status-text" id="statusText">Your meeting will start in</div>
+                <div class="timer-display" id="timerDisplay">05:00</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="control-menu">
+        <div class="menu-section">
+            <span class="menu-label">Set Time:</span>
+            <input type="number" id="minutes" min="0" max="60" value="5" placeholder="Min">
+            <input type="number" id="seconds" min="0" max="59" value="0" placeholder="Sec">
+        </div>
+        <div class="menu-section">
+            <button onclick="startTimer()">Start</button>
+            <button onclick="pauseTimer()">Pause</button>
+            <button onclick="resetTimer()">Reset</button>
+        </div>
+        <div class="menu-section">
+            <span class="menu-label">Music:</span>
+            <button onclick="toggleMusic()">Play</button>
+            <button onclick="stopMusic()">Stop</button>
+        </div>
+        <div class="menu-section">
+            <span class="menu-label">Quick:</span>
+            <button onclick="setTime(5,0)">5 Min</button>
+            <button onclick="setTime(10,0)">10 Min</button>
+            <button onclick="setTime(15,0)">15 Min</button>
+        </div>
+    </div>
+
+    <script>
+        let totalSeconds = 0, remainingSeconds = 0, timerInterval = null, isPaused = false;
+
+        // Binary Rain
+        const canvas = document.getElementById('matrix-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const fontSize = 14;
+        let drops = Array(Math.floor(canvas.width / fontSize)).fill(1);
+
+        function drawMatrix() {
+            ctx.fillStyle = 'rgba(0,0,0,0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#0ff';
+            ctx.font = fontSize + 'px monospace';
+            for (let i = 0; i < drops.length; i++) {
+                ctx.fillText(Math.random() > 0.5 ? '1' : '0', i * fontSize, drops[i] * fontSize);
+                if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+                drops[i]++;
+            }
+        }
+        setInterval(drawMatrix, 35);
+
+        function setTime(mins, secs) {
+            document.getElementById('minutes').value = mins;
+            document.getElementById('seconds').value = secs;
+            updateDisplayFromInputs();
+        }
+
+        function updateDisplayFromInputs() {
+            const m = parseInt(document.getElementById('minutes').value) || 0;
+            const s = parseInt(document.getElementById('seconds').value) || 0;
+            totalSeconds = m * 60 + s;
+            remainingSeconds = totalSeconds;
+            updateDisplay();
+        }
+
+        function startTimer() {
+            if (!timerInterval) {
+                const m = parseInt(document.getElementById('minutes').value) || 0;
+                const s = parseInt(document.getElementById('seconds').value) || 0;
+                totalSeconds = m * 60 + s;
+                remainingSeconds = totalSeconds;
+            }
+            if (remainingSeconds <= 0) { alert('Please set a time greater than 0'); return; }
+            document.getElementById('timerBox').classList.add('active');
+            document.getElementById('statusText').textContent = 'Your meeting will start in';
+            isPaused = false;
+            timerInterval = setInterval(() => {
+                if (!isPaused && remainingSeconds > 0) {
+                    remainingSeconds--;
+                    updateDisplay();
+                    if (remainingSeconds === 0) {
+                        clearInterval(timerInterval); timerInterval = null;
+                        document.getElementById('statusText').textContent = 'Meeting Time!';
+                        playAlert();
+                    }
+                }
+            }, 1000);
+        }
+
+        function pauseTimer() {
+            isPaused = !isPaused;
+            document.getElementById('statusText').textContent = isPaused ? 'Paused' : 'Your meeting will start in';
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval); timerInterval = null; isPaused = false;
+            updateDisplayFromInputs();
+            document.getElementById('statusText').textContent = 'Your meeting will start in';
+            document.getElementById('timerBox').classList.remove('active');
+        }
+
+        function minimizeTimer() {
+            const b = document.getElementById('timerBox');
+            b.style.cssText += ';transform:scale(0.2);opacity:0.3;position:fixed;bottom:100px;right:20px;top:auto;left:auto';
+            setTimeout(() => { b.style.transform = 'scale(1)'; b.style.opacity = '1'; }, 300);
+        }
+
+        function closeTimer() { document.getElementById('timerBox').classList.remove('active'); resetTimer(); }
+
+        function updateDisplay() {
+            const m = Math.floor(remainingSeconds / 60), s = remainingSeconds % 60;
+            document.getElementById('timerDisplay').textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+        }
+
+        function playAlert() {
+            const ac = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ac.createOscillator(), gain = ac.createGain();
+            osc.connect(gain); gain.connect(ac.destination);
+            osc.frequency.value = 800; osc.type = 'sine';
+            gain.gain.setValueAtTime(0.3, ac.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, ac.currentTime + 0.5);
+            osc.start(ac.currentTime); osc.stop(ac.currentTime + 0.5);
+        }
+
+        let musicPlaying = false, currentTrackIndex = 0;
+        const youtubePlaylist = [
+            'https://www.youtube.com/watch?v=P-pGH8Ey5fY',
+            'https://www.youtube.com/watch?v=zduoKERL9BI',
+            'https://www.youtube.com/watch?v=dulzKNE0Yww',
+            'https://www.youtube.com/watch?v=HkwCtYVv3QQ',
+        ];
+
+        function toggleMusic() {
+            if (!musicPlaying) {
+                window.open(youtubePlaylist[currentTrackIndex], 'MusicPlayer', 'width=400,height=300');
+                musicPlaying = true;
+                alert('Music opened in new window.');
+            }
+        }
+
+        function stopMusic() { musicPlaying = false; currentTrackIndex = 0; alert('Please close the music window manually'); }
+
+        function changeTheme(theme) {
+            const themes = {
+                'blue-matrix':    ['#0ff',    'rgba(0,255,255,0.8)'],
+                'green-terminal': ['#0f0',    'rgba(0,255,0,0.8)'],
+                'purple-neon':    ['#b388ff', 'rgba(179,136,255,0.8)'],
+                'orange-alert':   ['#ff6b35', 'rgba(255,107,53,0.8)'],
+            };
+            const [color, glow] = themes[theme] || themes['blue-matrix'];
+            document.body.style.color = color;
+            document.querySelectorAll('button, input, select, .control-menu, .video-indicator').forEach(el => {
+                el.style.borderColor = color; el.style.color = color;
+            });
+            const tb = document.querySelector('.timer-box');
+            tb.style.borderColor = color;
+            tb.style.boxShadow = `0 0 40px ${glow}, 0 0 80px ${glow.replace('0.8','0.4')}`;
+            document.querySelector('.popup-header').style.borderBottomColor = color;
+            const td = document.getElementById('timerDisplay');
+            td.style.color = color;
+            td.style.textShadow = `0 0 40px ${color}, 0 0 80px ${color}, 0 0 120px ${color}`;
+        }
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            drops = Array(Math.floor(canvas.width / fontSize)).fill(1);
+        });
+
+        updateDisplayFromInputs();
+    </script>
+</body>
+</html>

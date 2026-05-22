@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Katt Slade</title>
+<link href="https://fonts.googleapis.com/css2?family=Shrikhand&family=Syne+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --purple: #9b30ff;
+    --purple-dim: rgba(155,48,255,0.15);
+    --purple-glow: rgba(155,48,255,0.5);
+    --purple-dark: rgba(155,48,255,0.08);
+    --green: #00ff41;
+    --bg: #020805;
+    --text: #c0ffc0;
+    --text-dim: #3a6640;
+    --card-bg: rgba(4,12,8,0.97);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Syne Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: clamp(16px, 4vw, 40px) 16px;
+  }
+
+  canvas { position: fixed; top:0; left:0; z-index:0; }
+
+  .card-wrap {
+    position: relative;
+    z-index: 10;
+    width: min(420px, 100%);
+    margin: auto;
+    animation: cardFloat 6s ease-in-out infinite;
+  }
+
+  @keyframes cardFloat {
+    0%,100% { transform: translateY(0px); }
+    50%      { transform: translateY(-6px); }
+  }
+
+  .card {
+    background: var(--card-bg);
+    border: 1px solid rgba(0,255,65,0.25);
+    box-shadow: 0 0 0 1px rgba(155,48,255,0.1), 0 0 30px rgba(0,255,65,0.08), 0 0 60px rgba(155,48,255,0.06), inset 0 0 40px rgba(0,0,0,0.5);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::before, .card::after {
+    content: '';
+    position: absolute;
+    width: 16px; height: 16px;
+    border-color: var(--purple);
+    border-style: solid;
+    z-index: 2;
+    pointer-events: none;
+  }
+  .card::before { top:10px; left:10px; border-width:2px 0 0 2px; }
+  .card::after  { bottom:10px; right:10px; border-width:0 2px 2px 0; }
+
+  .card-scanlines {
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(to bottom, transparent, transparent 2px, rgba(0,0,0,0.15) 2px, rgba(0,0,0,0.15) 4px);
+    pointer-events: none; z-index: 3;
+  }
+
+  .card-topbar {
+    border-bottom: 1px solid rgba(0,255,65,0.15);
+    padding: 10px 18px;
+    display: flex; justify-content: space-between; align-items: center;
+    position: relative; z-index: 4;
+  }
+  .card-id   { font-size:10px; letter-spacing:3px; color:var(--text-dim); }
+  .card-type { font-size:10px; letter-spacing:2px; color:var(--purple); opacity:0.8; }
+
+  .triangle-wrap {
+    display: flex; justify-content: center; align-items: center;
+    padding: 28px 20px 16px;
+    position: relative; z-index: 4;
+  }
+
+  .triangle-svg {
+    width: clamp(110px, 30vw, 150px);
+    height: auto;
+    overflow: visible;
+    filter: drop-shadow(0 0 14px rgba(155,48,255,0.8)) drop-shadow(0 0 30px rgba(155,48,255,0.4));
+  }
+
+  .tri-outer { animation: triGlow 3s ease-in-out infinite; }
+  @keyframes triGlow {
+    0%,100% { opacity:1; }
+    50%      { opacity:0.8; }
+  }
+
+  /* Three staggered expanding inner triangles */
+  .tri-inner { transform-box: fill-box; transform-origin: center; }
+  .tri-inner-1 { animation: triExpand 2.4s ease-out infinite 0s; }
+  .tri-inner-2 { animation: triExpand 2.4s ease-out infinite 0.8s; }
+  .tri-inner-3 { animation: triExpand 2.4s ease-out infinite 1.6s; }
+
+  @keyframes triExpand {
+    0%   { transform: scale(0.2); opacity: 0.9; }
+    100% { transform: scale(1.6); opacity: 0; }
+  }
+
+  .card-name-block { text-align:center; padding:0 20px 16px; position:relative; z-index:4; }
+  .card-name { font-family:'Shrikhand',cursive; font-size:clamp(36px,10vw,56px); color:#fff; line-height:1; margin-bottom:6px; text-shadow:0 0 20px rgba(155,48,255,0.6), 0 0 40px rgba(155,48,255,0.2); }
+  .card-role    { font-size:clamp(8px,2vw,11px); letter-spacing:4px; color:var(--purple); margin-bottom:4px; }
+  .card-tagline { font-size:clamp(8px,2vw,10px); letter-spacing:2px; color:var(--text-dim); }
+
+  .card-divider { height:1px; background:linear-gradient(90deg, transparent, rgba(155,48,255,0.4), rgba(0,255,65,0.3), transparent); margin:0 20px; position:relative; z-index:4; }
+
+  .card-stats {
+    display:grid; grid-template-columns:1fr 1fr; gap:1px;
+    background:rgba(0,255,65,0.08);
+    border-top:1px solid rgba(0,255,65,0.1); border-bottom:1px solid rgba(0,255,65,0.1);
+    margin:16px 0 0; position:relative; z-index:4;
+  }
+  .stat-cell { background:var(--card-bg); padding:11px 14px; }
+  .stat-cell:nth-child(odd) { border-right:1px solid rgba(0,255,65,0.08); }
+  .stat-label { font-size:9px; letter-spacing:2px; color:var(--text-dim); margin-bottom:4px; }
+  .stat-value { font-size:clamp(11px,2.5vw,13px); color:var(--green); line-height:1.4; }
+  .stat-value.purple { color:var(--purple); }
+
+  .card-ability { padding:14px 18px; border-bottom:1px solid rgba(0,255,65,0.08); position:relative; z-index:4; background:var(--purple-dark); }
+  .ability-label { font-size:9px; letter-spacing:3px; color:var(--purple); margin-bottom:6px; opacity:0.8; }
+  .ability-text  { font-size:clamp(11px,2.5vw,12px); color:#8080b0; line-height:1.7; font-style:italic; }
+
+  .card-links { display:grid; grid-template-columns:1fr 1fr 1fr; gap:1px; background:rgba(0,255,65,0.06); position:relative; z-index:4; }
+  .card-link { background:var(--card-bg); padding:14px 8px; text-align:center; text-decoration:none; display:flex; flex-direction:column; align-items:center; gap:5px; transition:background 0.2s; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+  .card-link:hover,.card-link:active { background:rgba(155,48,255,0.12); }
+  .card-link:nth-child(2) { border-left:1px solid rgba(0,255,65,0.08); border-right:1px solid rgba(0,255,65,0.08); }
+  .link-icon  { font-size:18px; }
+  .link-label { font-size:9px; letter-spacing:2px; color:var(--purple); }
+
+  .card-bottom { padding:8px 18px; display:flex; justify-content:space-between; align-items:center; position:relative; z-index:4; border-top:1px solid rgba(0,255,65,0.08); }
+  .card-bottom-left  { font-size:9px; color:var(--text-dim); letter-spacing:2px; }
+  .card-bottom-right { font-size:9px; color:var(--text-dim); letter-spacing:1px; }
+  .pips { display:flex; gap:4px; align-items:center; }
+  .pip  { width:8px; height:8px; border:1px solid var(--purple); background:var(--purple); box-shadow:0 0 4px var(--purple-glow); }
+  .pip.empty { background:transparent; }
+</style>
+</head>
+<body>
+
+<canvas id="rain"></canvas>
+
+<div class="card-wrap">
+  <div class="card">
+    <div class="card-scanlines"></div>
+
+    <div class="card-topbar">
+      <div class="card-id">ID://KS-0001</div>
+      <div class="card-type">PURPLE TEAM ◈</div>
+    </div>
+
+    <div class="triangle-wrap">
+      <svg class="triangle-svg" viewBox="0 0 120 110" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Expanding inner triangles -->
+        <polygon class="tri-inner tri-inner-1" points="60,34 94,88 26,88"
+          stroke="rgba(155,48,255,0.8)" stroke-width="1.2" fill="none"/>
+        <polygon class="tri-inner tri-inner-2" points="60,34 94,88 26,88"
+          stroke="rgba(155,48,255,0.8)" stroke-width="1.2" fill="none"/>
+        <polygon class="tri-inner tri-inner-3" points="60,34 94,88 26,88"
+          stroke="rgba(155,48,255,0.8)" stroke-width="1.2" fill="none"/>
+        <!-- Outer triangle -->
+        <polygon class="tri-outer" points="60,6 114,104 6,104"
+          stroke="#9b30ff" stroke-width="1.8" fill="none"/>
+        <!-- Radial lines -->
+        <line x1="60" y1="60" x2="60"  y2="10"  stroke="rgba(155,48,255,0.2)" stroke-width="0.8"/>
+        <line x1="60" y1="60" x2="108" y2="101" stroke="rgba(155,48,255,0.2)" stroke-width="0.8"/>
+        <line x1="60" y1="60" x2="12"  y2="101" stroke="rgba(155,48,255,0.2)" stroke-width="0.8"/>
+        <!-- Corner dots -->
+        <circle cx="60"  cy="6"   r="2.5" fill="#9b30ff"/>
+        <circle cx="114" cy="104" r="2.5" fill="#9b30ff"/>
+        <circle cx="6"   cy="104" r="2.5" fill="#9b30ff"/>
+        <!-- Center dot -->
+        <circle cx="60" cy="60" r="3" fill="#9b30ff" opacity="0.9"/>
+      </svg>
+    </div>
+
+    <div class="card-name-block">
+      <div class="card-name">Katt Slade</div>
+      <div class="card-role">PRIVACY ENGINEER / SECURITY OPERATOR</div>
+      <div class="card-tagline">CONNECT AND PROTECT</div>
+    </div>
+
+    <div class="card-divider"></div>
+
+    <div class="card-stats">
+      <div class="stat-cell">
+        <div class="stat-label">SPECIALIZATION</div>
+        <div class="stat-value purple">Purple Team</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-label">PRIMARY OPS</div>
+        <div class="stat-value">Blue Team / SOC</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-label">DOMAIN</div>
+        <div class="stat-value">Network Security</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-label">FOCUS</div>
+        <div class="stat-value">Privacy Engineering</div>
+      </div>
+    </div>
+
+    <div class="card-ability">
+      <div class="ability-label">MANTRA</div>
+      <div class="ability-text">"Clean infrastructure isn't just best practice — it's how we protect what the internet was meant to be."</div>
+    </div>
+
+    <div class="card-links">
+      <a href="https://overbyteamerica.github.io/Cryptid-Arcad3/index.html" target="_blank" class="card-link">
+        <span class="link-icon">🕹</span>
+        <span class="link-label">ARCADE</span>
+      </a>
+      <a href="KATT SLADE - newest resume.pdf" target="_blank" class="card-link">
+        <span class="link-icon">📄</span>
+        <span class="link-label">RESUME</span>
+      </a>
+      <a href="https://www.linkedin.com/in/kattslade" target="_blank" class="card-link">
+        <span class="link-icon">🔗</span>
+        <span class="link-label">LINKEDIN</span>
+      </a>
+    </div>
+
+    <div class="card-bottom">
+      <div class="card-bottom-left">© 2026 KATT SLADE</div>
+      <div class="pips">
+        <div class="pip"></div><div class="pip"></div><div class="pip"></div>
+        <div class="pip"></div><div class="pip empty"></div>
+      </div>
+      <div class="card-bottom-right">PWR // 4/5</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('rain');
+const ctx = canvas.getContext('2d');
+let cols, drops;
+
+function initRain() {
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  cols = Math.floor(canvas.width / 14);
+  drops = Array(cols).fill(1);
+}
+
+function drawRain() {
+  ctx.fillStyle = 'rgba(2,8,5,0.07)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  drops.forEach((y, i) => {
+    const isBinary = Math.random() > 0.6;
+    const char = isBinary
+      ? (Math.random() > 0.5 ? '1' : '0')
+      : String.fromCharCode(0x30A0 + Math.random() * 96);
+    const isPurple = Math.random() > 0.97;
+    ctx.fillStyle = isPurple
+      ? `rgba(155,48,255,${Math.random()*0.6+0.3})`
+      : `rgba(0,255,65,${Math.random()*0.4+0.08})`;
+    ctx.font = '14px monospace';
+    ctx.fillText(char, i*14, y*14);
+    if (y*14 > canvas.height && Math.random() > 0.975) drops[i] = 0;
+    drops[i]++;
+  });
+}
+
+let rt;
+window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(initRain, 100); });
+initRain();
+setInterval(drawRain, 45);
+</script>
+</body>
+</html>

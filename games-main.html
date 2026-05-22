@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CRYPTID ARCADE - GAMES</title>
+  <link href="https://fonts.googleapis.com/css2?family=Shrikhand&family=Major+Mono+Display&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      min-height: 100dvh;
+      font-family: 'Major Mono Display', monospace;
+      background-color: black;
+      color: white;
+      text-align: center;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-bottom: 40px;
+    }
+
+    canvas { position: fixed; top:0; left:0; z-index:-1; }
+
+    h1 {
+      font-family: 'Shrikhand', cursive;
+      font-size: clamp(44px, 12vw, 90px);
+      color: cyan;
+      text-shadow: 0 0 5px cyan, 0 0 15px cyan, 0 0 30px cyan;
+      animation: glowFlicker 1s infinite;
+      margin-top: clamp(30px, 6vh, 60px);
+      margin-bottom: 10px;
+    }
+
+    @keyframes glowFlicker {
+      0%,100% {opacity:1;}
+      20%,55% {opacity:0.7;text-shadow:none;}
+    }
+
+    #subhead {
+      font-family: 'Shrikhand', cursive;
+      font-size: clamp(14px, 4vw, 28px);
+      color:#0ff;
+      text-shadow:0 0 10px #0ff, 0 0 20px #0ff;
+      margin-bottom: clamp(40px, 8vh, 80px);
+      padding: 0 16px;
+    }
+
+    .button-container {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      flex-wrap: wrap;
+      padding: 0 16px;
+      width: 100%;
+      max-width: 900px;
+    }
+
+    .game-card {
+      width: clamp(280px, 90vw, 400px);
+      padding: 25px;
+      border: 3px solid white;
+      background: black;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-align: left;
+    }
+
+    .game-card:hover, .game-card:active {
+      background: white;
+      color: black;
+      box-shadow: 0 0 20px cyan, 0 0 40px cyan;
+      transform: scale(1.03);
+    }
+
+    .game-title {
+      font-size: clamp(18px, 5vw, 26px);
+      margin-bottom: 15px;
+      font-family: 'Shrikhand', cursive;
+    }
+
+    .game-description {
+      font-family: "Courier New", monospace;
+      font-size: clamp(13px, 3.5vw, 15px);
+      line-height: 1.6;
+    }
+
+    .back-button {
+      font-size: clamp(14px, 4vw, 22px);
+      padding: 14px 36px;
+      margin-top: 30px;
+      cursor: pointer;
+      background: black;
+      color: white;
+      border: 3px solid white;
+      font-family: 'Major Mono Display', monospace;
+      touch-action: manipulation;
+    }
+
+    .back-button:hover, .back-button:active {
+      color: black;
+      background: white;
+      box-shadow: 0 0 20px cyan, 0 0 40px cyan;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="stars"></canvas>
+
+  <h1>GAMES</h1>
+  <div id="subhead">Test your cybersecurity skills</div>
+
+  <div class="button-container">
+
+    <!-- DEFENDERS GAME CARD -->
+    <div class="game-card" onclick="location.href='defenders/defenders/defenders-start.html'">
+      <div class="game-title">THE DEFENDERS</div>
+      <div class="game-description">
+        After a global blackout fractures the grid, hidden threats move through the network.
+        <br><br>
+        As a newly activated Defender, you will investigate breaches, track adversaries,
+        and restore trust to compromised systems.
+        <br><br>
+        Learn real cybersecurity skills while uncovering the truth.
+      </div>
+      <div style="margin-top: 15px; font-family: 'Courier New', monospace; font-size: clamp(11px, 2.5vw, 13px); color: #ff4444; opacity: 0.9;">⚠ Desktop only</div>
+    </div>
+
+    <!-- BIGFOOT.EXE GAME CARD -->
+    <div class="game-card" onclick="location.href='games/bigfoot-hunt.html'">
+      <div class="game-title">BIGFOOT.EXE</div>
+      <div class="game-description">
+        You are Bigfoot — a cyber cryptid moving across hidden networks, hunted by security forces trying to contain you.
+        <br><br>
+        Use stealth, scanning beams, and strategy to survive the hunt and uncover secrets buried deep in the system.
+      </div>
+      <div style="margin-top: 15px; font-family: 'Courier New', monospace; font-size: clamp(11px, 2.5vw, 13px); color: #00ff88; opacity: 0.9;">📱 Mobile friendly</div>
+    </div>
+
+    <!-- PACKET RUNNER GAME CARD -->
+    <div class="game-card" onclick="location.href='games/packet-runner.html'">
+      <div class="game-title">PACKET RUN</div>
+      <div class="game-description">
+        Deep beneath the ruins of the old ARPANET bunker lies a seven-chambered tomb.
+        <br><br>
+        Guide a critical data packet through every layer of the OSI stack — answer traps correctly or the packet is lost forever to VOID.EXE.
+        <br><br>
+        Three tombs. Seven chambers each. The stack does not forgive mistakes.
+      </div>
+      <div style="margin-top: 15px; font-family: 'Courier New', monospace; font-size: clamp(11px, 2.5vw, 13px); color: #00ff88; opacity: 0.9;">📱 Mobile friendly</div>
+    </div>
+
+    <!-- PACKET REEF GAME CARD -->
+    <div class="game-card" onclick="location.href='games/packet-reef.html'">
+      <div class="game-title">SHARK ATTACK</div>
+      <div class="game-description">
+        A diver is in the water. A shark is closing in. Your only weapon: Wireshark.
+        <br><br>
+        Analyze live network captures, read packet data, and enter the correct filter command before the attack reaches the diver.
+        <br><br>
+        Three tiers. Fifteen levels. Filters get harder — and the shark gets faster.
+      </div>
+      <div style="margin-top: 15px; font-family: 'Courier New', monospace; font-size: clamp(11px, 2.5vw, 13px); color: #00ff88; opacity: 0.9;">📱 Mobile friendly</div>
+    </div>
+
+  </div>
+/
+  <button class="back-button" onclick="location.href='games/packet-reef.html'">Back to Arcade</button>
+
+  <script>
+    const canvas = document.getElementById('stars');
+    const ctx = canvas.getContext('2d');
+    let stars = [];
+
+    function initStars(){
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      stars = Array.from({length:150}, () => ({
+        x: Math.random()*canvas.width,
+        y: Math.random()*canvas.height,
+        size: Math.random()*2 + 1,
+        speed: Math.random()*0.6 + 0.2
+      }));
+    }
+
+    function animateStars(){
+      ctx.fillStyle = 'black';
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+      ctx.fillStyle = 'white';
+      stars.forEach(s=>{
+        ctx.fillRect(s.x,s.y,s.size,s.size);
+        s.x -= s.speed;
+        if(s.x < 0) s.x = canvas.width;
+      });
+      requestAnimationFrame(animateStars);
+    }
+
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(initStars, 100);
+    });
+    initStars();
+    animateStars();
+  </script>
+</body>
+</html>

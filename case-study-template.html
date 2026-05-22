@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CRYPTID ARCADE - CASE STUDIES</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Major+Mono+Display&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: 'Major Mono Display', monospace;
+      background-color: black;
+      color: white;
+      text-align: center;
+      overflow-x: hidden;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: -1;
+    }
+
+    /* TOP NAV */
+    .nav {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      padding: 18px 14px 8px;
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(3px);
+      border-bottom: 1px solid rgba(0, 255, 255, 0.18);
+    }
+
+    button {
+      font-size: 16px;
+      padding: 12px 22px;
+      cursor: pointer;
+      background: black;
+      color: white;
+      border: 3px solid white;
+      font-family: 'Major Mono Display', monospace;
+      transition: transform 0.05s ease-in-out;
+    }
+
+    button:hover {
+      color: black;
+      background: white;
+      box-shadow: 0 0 20px cyan, 0 0 40px cyan;
+      animation: zap 0.3s;
+    }
+
+    @keyframes zap {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.15) rotate(-2deg); }
+      100% { transform: scale(1); }
+    }
+
+    /* MAIN TITLE */
+    h1 {
+      font-size: 72px;
+      color: cyan;
+      text-shadow: 0 0 5px cyan, 0 0 15px cyan, 0 0 30px cyan;
+      animation: glowFlicker 1s infinite;
+      margin: 34px 0 10px;
+      letter-spacing: 2px;
+      padding: 0 14px;
+    }
+
+    @keyframes glowFlicker {
+      0%, 100% { opacity: 1; }
+      20%, 55% { opacity: 0.72; text-shadow: none; }
+    }
+
+    /* Subhead: simpler readable font */
+    #subhead {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 18px;
+      color: rgba(255, 255, 255, 0.92);
+      text-shadow: 0 0 10px rgba(0, 255, 255, 0.25);
+      margin: 0 auto 22px;
+      max-width: 880px;
+      line-height: 1.6;
+      padding: 0 18px;
+    }
+
+    /* Dashboard container */
+    .container {
+      width: min(1100px, 92vw);
+      margin: 0 auto 80px;
+      padding-bottom: 40px;
+    }
+
+    .panel {
+      border: 2px solid rgba(0, 255, 255, 0.55);
+      box-shadow: 0 0 18px rgba(0, 255, 255, 0.15);
+      background: rgba(0, 0, 0, 0.55);
+      padding: 18px 18px 12px;
+      margin: 0 auto 22px;
+      border-radius: 10px;
+      text-align: left;
+    }
+
+    .panel h2 {
+      margin: 0 0 10px;
+      font-size: 20px;
+      color: cyan;
+      text-shadow: 0 0 12px rgba(0, 255, 255, 0.5);
+      text-align: center;
+      letter-spacing: 1px;
+    }
+
+    .panel p {
+      font-family: Arial, Helvetica, sans-serif;
+      margin: 0 0 10px;
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.9);
+      line-height: 1.6;
+      text-align: center;
+    }
+
+    /* Grid layout */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 16px;
+      margin-top: 18px;
+    }
+
+    .card {
+      grid-column: span 12;
+      border: 2px solid rgba(255, 255, 255, 0.35);
+      background: rgba(0, 0, 0, 0.65);
+      border-radius: 14px;
+      padding: 18px 16px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 0 20px rgba(0, 255, 255, 0.08);
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: -2px;
+      border-radius: 14px;
+      background: radial-gradient(circle at top left, rgba(0,255,255,0.14), transparent 55%);
+      pointer-events: none;
+    }
+
+    .card h3 {
+      margin: 0 0 8px;
+      font-size: 18px;
+      color: cyan;
+      text-shadow: 0 0 10px rgba(0, 255, 255, 0.35);
+      letter-spacing: 1px;
+    }
+
+    .meta {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 13px;
+      opacity: 0.9;
+      margin-bottom: 10px;
+      line-height: 1.5;
+    }
+
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 12px 0 16px;
+    }
+
+    .tag {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 11px;
+      padding: 6px 10px;
+      border: 1px solid rgba(0, 255, 255, 0.55);
+      color: rgba(0, 255, 255, 0.95);
+      border-radius: 999px;
+      background: rgba(0, 255, 255, 0.07);
+      text-shadow: 0 0 10px rgba(0, 255, 255, 0.25);
+      white-space: nowrap;
+    }
+
+    .card-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+
+    /* Smaller buttons inside cards */
+    .card button {
+      font-size: 14px;
+      padding: 10px 18px;
+      border-width: 2px;
+    }
+
+    .locked {
+      border: 2px dashed rgba(255, 255, 255, 0.25);
+      opacity: 0.75;
+    }
+
+    .locked h3 {
+      color: rgba(255, 255, 255, 0.85);
+      text-shadow: none;
+    }
+
+    .locked .tag {
+      border-color: rgba(255, 255, 255, 0.25);
+      color: rgba(255, 255, 255, 0.7);
+      background: rgba(255, 255, 255, 0.06);
+      text-shadow: none;
+    }
+
+    .hint {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 12px;
+      opacity: 0.7;
+      margin-top: 8px;
+    }
+
+    @media (min-width: 760px) {
+      .card { grid-column: span 6; }
+    }
+
+    @media (min-width: 1050px) {
+      .card { grid-column: span 4; }
+    }
+  </style>
+</head>
+
+<body>
+  <canvas id="stars"></canvas>
+
+  <!-- TOP NAV -->
+  <div class="nav">
+    <button onclick="location.href='index.html'">Back to Home</button>
+    <button onclick="location.href='equifax.html'">Next Case Study</button>
+  </div>
+
+  <!-- HEADER -->
+  <h1>CRYPTID ARCADE CASE FILES</h1>
+  <div id="subhead">
+    Your incident archive. Open a file, review the timeline, extract the lesson, and level up your defenses.
+  </div>
+
+  <div class="container">
+    <div class="panel">
+      <h2>SEASON 1 — CASE STUDY DASHBOARD</h2>
+      <p>
+        Each case study is formatted like a mission log. Keep it clean. Track the signals. Document the fix.
+      </p>
+
+      <div class="grid">
+
+        <div class="card">
+          <h3>CASE STUDY 01 — EQUIFAX</h3>
+          <div class="meta">
+            <div><strong>Type:</strong> Breach / Exposure</div>
+            <div><strong>Focus:</strong> Detection + Patch Failures</div>
+          </div>
+
+          <div class="tags">
+            <span class="tag">Blue Team</span>
+            <span class="tag">Incident Response</span>
+            <span class="tag">Vulnerability Mgmt</span>
+          </div>
+
+          <div class="card-actions">
+            <button onclick="location.href='equifax.html'">Open File</button>
+          </div>
+
+          <div class="hint">Status: ✅ ACTIVE FILE</div>
+        </div>
+
+        <div class="card">
+          <h3>CASE STUDY 02 — FULTON COUNTY</h3>
+          <div class="meta">
+            <div><strong>Type:</strong> Public Sector / Ransomware</div>
+            <div><strong>Focus:</strong> Continuity + Response</div>
+          </div>
+
+          <div class="tags">
+            <span class="tag">IR Planning</span>
+            <span class="tag">Recovery</span>
+            <span class="tag">SOC Mindset</span>
+          </div>
+
+          <div class="card-actions">
+            <button onclick="location.href='fulton-county.html'">Open File</button>
+          </div>
+
+          <div class="hint">Status: ✅ ACTIVE FILE</div>
+        </div>
+
+        <div class="card locked">
+          <h3>CASE STUDY 03 — LOCKED</h3>
+          <div class="meta">
+            <div><strong>Type:</strong> ???</div>
+            <div><strong>Focus:</strong> Unknown Threat Signal</div>
+          </div>
+
+          <div class="tags">
+            <span class="tag">Coming Soon</span>
+            <span class="tag">Encrypted</span>
+            <span class="tag">Season 1</span>
+          </div>
+
+          <div class="card-actions">
+            <button onclick="alert('FILE LOCKED: complete training to unlock.');">Attempt Access</button>
+          </div>
+
+          <div class="hint">Status: 🔒 ACCESS DENIED</div>
+        </div>
+
+        <div class="card locked">
+          <h3>CASE STUDY 04 — LOCKED</h3>
+          <div class="meta">
+            <div><strong>Type:</strong> ???</div>
+            <div><strong>Focus:</strong> Shadow Traffic / Anomaly</div>
+          </div>
+
+          <div class="tags">
+            <span class="tag">Coming Soon</span>
+            <span class="tag">Encrypted</span>
+            <span class="tag">Season 1</span>
+          </div>
+
+          <div class="card-actions">
+            <button onclick="alert('FILE LOCKED: not available yet.');">Attempt Access</button>
+          </div>
+
+          <div class="hint">Status: 🔒 ACCESS DENIED</div>
+        </div>
+
+        <div class="card locked">
+          <h3>CASE STUDY 05 — LOCKED</h3>
+          <div class="meta">
+            <div><strong>Type:</strong> ???</div>
+            <div><strong>Focus:</strong> Supply Chain Signal</div>
+          </div>
+
+          <div class="tags">
+            <span class="tag">Coming Soon</span>
+            <span class="tag">Encrypted</span>
+            <span class="tag">Season 1</span>
+          </div>
+
+          <div class="card-actions">
+            <button onclick="alert('FILE LOCKED: clearance required.');">Attempt Access</button>
+          </div>
+
+          <div class="hint">Status: 🔒 ACCESS DENIED</div>
+        </div>
+
+        <div class="card locked">
+          <h3>CASE STUDY 06 — LOCKED</h3>
+          <div class="meta">
+            <div><strong>Type:</strong> ???</div>
+            <div><strong>Focus:</strong> Credential Event</div>
+          </div>
+
+          <div class="tags">
+            <span class="tag">Coming Soon</span>
+            <span class="tag">Encrypted</span>
+            <span class="tag">Season 1</span>
+          </div>
+
+          <div class="card-actions">
+            <button onclick="alert('FILE LOCKED: try again later.');">Attempt Access</button>
+          </div>
+
+          <div class="hint">Status: 🔒 ACCESS DENIED</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('stars');
+    const ctx = canvas.getContext('2d');
+    let stars = [];
+    const numStars = 150;
+
+    function initStars() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      stars = [];
+      for (let i = 0; i < numStars; i++) {
+        stars.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          size: Math.random() * 2 + 1,
+          speed: Math.random() * 0.6 + 0.2
+        });
+      }
+    }
+
+    function animateStars() {
+      ctx.fillStyle = 'black';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = 'white';
+      stars.forEach(s => {
+        ctx.fillRect(s.x, s.y, s.size, s.size);
+        s.x -= s.speed;
+        if (s.x < 0) s.x = canvas.width;
+      });
+
+      requestAnimationFrame(animateStars);
+    }
+
+    window.addEventListener('resize', initStars);
+    initStars();
+    animateStars();
+  </script>
+</body>
+</html>
+

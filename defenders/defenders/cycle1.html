@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cycle 1 — Identity</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/defenders-style.css">
+</head>
+<body>
+  <div class="screen">
+    <h1>IDENTITY REQUIRED</h1>
+
+    <p>Enter your Defender handle:</p>
+
+    <input
+      id="playerName"
+      type="text"
+      placeholder="DEFENDER_01"
+    >
+
+    <br>
+
+    <button onclick="startGame()">ENTER</button>
+  </div>
+
+  <script>
+    function startGame() {
+      const name = document.getElementById('playerName').value.trim();
+      if (!name) {
+        alert('Handle required.');
+        return;
+      }
+      localStorage.setItem('defenderName', name);
+      location.href = 'dashboard.html';
+    }
+  </script>
+</body>
+</html>
