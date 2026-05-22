@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CASE STUDY 02 — CARTER'S URGENT CARE</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Shrikhand&family=Orbitron:wght@400;600&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+
+<style>
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: black;
+  color: white;
+  font-family: 'Inter', sans-serif;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+canvas { position: fixed; top:0; left:0; z-index:-1; }
+
+nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: clamp(12px, 3vw, 20px) clamp(16px, 4vw, 40px);
+  border-bottom: 2px solid cyan;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+nav button {
+  background: black;
+  border: 2px solid cyan;
+  color: cyan;
+  padding: clamp(8px, 2vw, 10px) clamp(14px, 3vw, 22px);
+  cursor: pointer;
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(11px, 2.5vw, 14px);
+  touch-action: manipulation;
+  transition: all 0.2s;
+}
+
+nav button:hover, nav button:active {
+  background: cyan;
+  color: black;
+  box-shadow: 0 0 20px cyan;
+}
+
+header {
+  text-align: center;
+  margin-top: clamp(24px, 5vh, 40px);
+  padding: 0 16px;
+}
+
+header h1 {
+  font-family: 'Shrikhand', cursive;
+  font-size: clamp(22px, 6vw, 48px);
+  color: cyan;
+  text-shadow: 0 0 20px cyan;
+  line-height: 1.2;
+}
+
+header h2 {
+  font-size: clamp(13px, 3vw, 18px);
+  color: #9ff;
+  margin-top: 6px;
+}
+
+.dashboard {
+  max-width: 1200px;
+  margin: clamp(30px, 6vh, 60px) auto;
+  padding: clamp(12px, 4vw, 20px);
+}
+
+.panel {
+  border: 2px solid cyan;
+  padding: clamp(16px, 4vw, 30px);
+  margin-bottom: clamp(20px, 4vh, 40px);
+  position: relative;
+  animation: fadeUp 0.8s ease forwards;
+  overflow: hidden;
+}
+
+.panel::after {
+  content:'';
+  position:absolute;
+  inset:0;
+  background: linear-gradient(transparent, rgba(0,255,255,0.05), transparent);
+  animation: scan 4s linear infinite;
+  pointer-events:none;
+}
+
+@keyframes scan {
+  0% { opacity:0; transform:translateY(-100%); }
+  50% { opacity:1; }
+  100% { opacity:0; transform:translateY(100%); }
+}
+
+.panel h3 {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(13px, 3.5vw, 18px);
+  color: cyan;
+  margin-bottom: 15px;
+}
+
+.panel p, .panel li {
+  font-size: clamp(13px, 3vw, 15px);
+  line-height: 1.7;
+}
+
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(20px); }
+  to { opacity:1; transform:translateY(0); }
+}
+
+/* CIA TRIAD */
+.triad {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.triad-item {
+  border-left: 6px solid cyan;
+  padding: 12px 16px;
+  background: rgba(0,255,255,0.05);
+  font-size: clamp(13px, 3vw, 15px);
+  line-height: 1.6;
+}
+
+/* COLLAPSIBLES */
+details {
+  border: 1px solid cyan;
+  padding: clamp(10px, 3vw, 15px);
+  margin-bottom: 15px;
+}
+
+summary {
+  cursor: pointer;
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(12px, 3vw, 14px);
+  color: cyan;
+  touch-action: manipulation;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+summary::after { content: '▼'; font-size: 10px; }
+details[open] summary::after { content: '▲'; }
+
+details p, details li {
+  font-size: clamp(13px, 3vw, 15px);
+  line-height: 1.7;
+  margin-top: 10px;
+}
+
+li { margin-bottom: 10px; }
+
+/* INTERACTIVE DIAGRAM */
+#diagram-container {
+  width: 100%;
+  position: relative;
+}
+
+.diagram-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 20px;
+  justify-content: center;
+}
+
+.diagram-controls button {
+  background: black;
+  border: 2px solid cyan;
+  color: cyan;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(10px, 2.5vw, 12px);
+  touch-action: manipulation;
+  transition: all 0.2s;
+}
+
+.diagram-controls button:hover,
+.diagram-controls button.active {
+  background: cyan;
+  color: black;
+  box-shadow: 0 0 16px cyan;
+}
+
+#layerDiagram {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+#layerDiagram svg {
+  width: 100%;
+  min-width: 320px;
+  height: auto;
+  display: block;
+}
+
+.tooltip-box {
+  background: rgba(0,0,0,0.95);
+  border: 1px solid cyan;
+  padding: 10px 14px;
+  font-size: clamp(12px, 2.8vw, 14px);
+  line-height: 1.5;
+  color: #cff;
+  margin-top: 14px;
+  min-height: 60px;
+  transition: all 0.3s;
+}
+
+.tooltip-box strong {
+  color: cyan;
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(11px, 2.5vw, 13px);
+  display: block;
+  margin-bottom: 6px;
+}
+
+/* COMPARISON TABLE */
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-top: 10px;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 480px;
+  font-size: clamp(11px, 2.5vw, 14px);
+}
+
+th {
+  background: rgba(0,255,255,0.15);
+  color: cyan;
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(10px, 2.2vw, 12px);
+  padding: 10px 12px;
+  border: 1px solid rgba(0,255,255,0.4);
+  text-align: left;
+  white-space: nowrap;
+}
+
+td {
+  padding: 9px 12px;
+  border: 1px solid rgba(0,255,255,0.2);
+  line-height: 1.5;
+}
+
+tr:hover td { background: rgba(0,255,255,0.06); }
+
+.check { color: cyan; }
+.x { color: #f55; }
+
+/* STAT PILLS */
+.stats-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.stat-pill {
+  border: 1px solid cyan;
+  background: rgba(0,255,255,0.05);
+  padding: 10px 18px;
+  text-align: center;
+  flex: 1 1 120px;
+}
+
+.stat-pill .num {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(18px, 5vw, 28px);
+  color: cyan;
+  text-shadow: 0 0 10px cyan;
+}
+
+.stat-pill .label {
+  font-size: clamp(10px, 2.5vw, 12px);
+  color: #9ff;
+  margin-top: 4px;
+}
+
+/* layer highlight pulse */
+@keyframes layerPulse {
+  0%,100% { filter: drop-shadow(0 0 4px cyan); }
+  50% { filter: drop-shadow(0 0 14px cyan) drop-shadow(0 0 28px cyan); }
+}
+
+.layer-highlight {
+  animation: layerPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes flowAnim {
+  to { stroke-dashoffset: -24; }
+}
+
+@keyframes attackAnim {
+  to { stroke-dashoffset: -20; }
+}
+</style>
+</head>
+
+<body>
+<canvas id="stars"></canvas>
+
+<nav>
+  <button onclick="location.href='equifax-case-studies.html'">⬅ PREV CASE</button>
+  <button onclick="location.href='index.html'">⬆ ARCADE</button>
+  <button onclick="location.href='fulton-co.html'">NEXT CASE ▶</button>
+</nav>
+
+<header>
+  <h1>CARTER'S URGENT CARE</h1>
+  <h2>CASE STUDY 02 — LAYERED DEFENSE: BEYOND THE FIREWALL</h2>
+</header>
+
+<section class="dashboard">
+
+  <!-- OVERVIEW -->
+  <div class="panel">
+    <h3>Incident Overview</h3>
+    <p>
+      Carter's Urgent Care relied solely on a firewall — creating a single point of failure with zero visibility into insider threats, lateral movement, or zero-day attacks. The organization processes sensitive PHI daily while facing phishing, unauthorized access attempts, and abnormal network traffic. A layered IDS/IPS strategy is the prescribed solution.
+    </p>
+    <div class="stats-row">
+      <div class="stat-pill"><div class="num">22M</div><div class="label">People affected in 2025 AFLAC breach</div></div>
+      <div class="stat-pill"><div class="num">1</div><div class="label">Current defense layer (firewall only)</div></div>
+      <div class="stat-pill"><div class="num">$0</div><div class="label">Active threat detection deployed</div></div>
+      <div class="stat-pill"><div class="num">3</div><div class="label">Proposed defense layers</div></div>
+    </div>
+  </div>
+
+  <!-- CIA TRIAD -->
+  <div class="panel">
+    <h3>CIA Triad — Assets at Risk</h3>
+    <div class="triad">
+      <div class="triad-item"><strong>Confidentiality</strong><br>Patient PHI, SSNs, and health policy data exposed via social engineering lateral attacks — as seen in the 2025 AFLAC breach.</div>
+      <div class="triad-item"><strong>Integrity</strong><br>Unauthorized internal access and undetected privilege escalations corrupt records and invalidate data trust.</div>
+      <div class="triad-item"><strong>Availability</strong><br>No auto-blocking means ransomware spreads unimpeded — shutting down critical urgent care operations mid-incident.</div>
+    </div>
+  </div>
+
+  <!-- INTERACTIVE LAYERED DEFENSE DIAGRAM -->
+  <div class="panel">
+    <h3>Interactive — Layered Defense Model</h3>
+    <p style="font-size:clamp(12px,2.8vw,14px); color:#9ff; margin-bottom:16px;">Tap a layer to explore how each defense stops attackers in their tracks.</p>
+
+    <div class="diagram-controls">
+      <button class="active" id="btn-all" onclick="setView('all')">ALL LAYERS</button>
+      <button id="btn-attack" onclick="setView('attack')">ATTACK PATH</button>
+      <button id="btn-ids" onclick="setView('ids')">IDS VIEW</button>
+      <button id="btn-ips" onclick="setView('ips')">IPS VIEW</button>
+    </div>
+
+    <div id="layerDiagram">
+      <svg id="defSvg" viewBox="0 0 760 420" xmlns="http://www.w3.org/2000/svg">
+
+        <!-- Background grid lines -->
+        <defs>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(0,255,255,0.06)" stroke-width="1"/>
+          </pattern>
+          <marker id="arrowCyan" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="cyan"/>
+          </marker>
+          <marker id="arrowRed" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#f55"/>
+          </marker>
+          <marker id="arrowGreen" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill="#0f0"/>
+          </marker>
+        </defs>
+        <rect width="760" height="420" fill="url(#grid)"/>
+
+        <!-- Layer bands -->
+        <!-- Internet zone -->
+        <rect id="zone-internet" x="10" y="10" width="130" height="400" rx="4"
+              fill="rgba(255,80,80,0.06)" stroke="rgba(255,80,80,0.4)" stroke-width="1.5"/>
+        <text x="75" y="30" fill="rgba(255,80,80,0.8)" text-anchor="middle"
+              font-family="Orbitron,sans-serif" font-size="9">INTERNET</text>
+
+        <!-- Firewall zone -->
+        <rect id="zone-fw" x="160" y="10" width="100" height="400" rx="4"
+              fill="rgba(255,200,0,0.05)" stroke="rgba(255,200,0,0.35)" stroke-width="1.5"/>
+        <text x="210" y="30" fill="rgba(255,200,0,0.8)" text-anchor="middle"
+              font-family="Orbitron,sans-serif" font-size="9">FIREWALL</text>
+
+        <!-- NIDS/NIPS zone -->
+        <rect id="zone-nids" x="280" y="10" width="110" height="400" rx="4"
+              fill="rgba(0,255,255,0.04)" stroke="rgba(0,255,255,0.3)" stroke-width="1.5"/>
+        <text x="335" y="30" fill="cyan" text-anchor="middle"
+              font-family="Orbitron,sans-serif" font-size="9">NIDS/NIPS</text>
+
+        <!-- HIDS/HIPS zone -->
+        <rect id="zone-hids" x="410" y="10" width="110" height="400" rx="4"
+              fill="rgba(0,200,255,0.04)" stroke="rgba(0,200,255,0.3)" stroke-width="1.5"/>
+        <text x="465" y="30" fill="#0cf" text-anchor="middle"
+              font-family="Orbitron,sans-serif" font-size="9">HIDS/HIPS</text>
+
+        <!-- PHI / Data zone -->
+        <rect id="zone-phi" x="540" y="10" width="210" height="400" rx="4"
+              fill="rgba(0,255,100,0.04)" stroke="rgba(0,255,100,0.3)" stroke-width="1.5"/>
+        <text x="645" y="30" fill="#0f9" text-anchor="middle"
+              font-family="Orbitron,sans-serif" font-size="9">PROTECTED PHI</text>
+
+        <!-- ===== NODES ===== -->
+        <!-- Attacker -->
+        <g id="node-attacker" class="diagram-node" onclick="selectNode('attacker')" style="cursor:pointer">
+          <rect x="20" y="160" width="100" height="50" rx="4"
+                fill="black" stroke="#f55" stroke-width="2"/>
+          <text x="70" y="181" fill="#f55" text-anchor="middle"
+                font-family="Orbitron,sans-serif" font-size="9">ATTACKER</text>
+          <text x="70" y="197" fill="#f99" text-anchor="middle" font-size="10">Social Eng.</text>
+          <text x="70" y="210" fill="#f99" text-anchor="middle" font-size="10">/ Phishing</text>
+        </g>
+
+        <!-- Firewall node -->
+        <g id="node-fw" class="diagram-node" onclick="selectNode('fw')" style="cursor:pointer">
+          <rect x="170" y="155" width="80" height="60" rx="4"
+                fill="black" stroke="rgba(255,200,0,0.9)" stroke-width="2"/>
+          <text x="210" y="178" fill="rgba(255,200,0,1)" text-anchor="middle"
+                font-family="Orbitron,sans-serif" font-size="9">FIREWALL</text>
+          <text x="210" y="193" fill="#fc8" text-anchor="middle" font-size="10">Port / IP</text>
+          <text x="210" y="206" fill="#fc8" text-anchor="middle" font-size="10">Filtering</text>
+        </g>
+
+        <!-- NIDS node -->
+        <g id="node-nids" class="diagram-node" onclick="selectNode('nids')" style="cursor:pointer">
+          <rect x="288" y="100" width="94" height="55" rx="4"
+                fill="black" stroke="cyan" stroke-width="2"/>
+          <text x="335" y="122" fill="cyan" text-anchor="middle"
+                font-family="Orbitron,sans-serif" font-size="9">NIDS</text>
+          <text x="335" y="136" fill="#9ff" text-anchor="middle" font-size="10">Traffic</text>
+          <text x="335" y="149" fill="#9ff" text-anchor="middle" font-size="10">Monitoring</text>
+        </g>
+
+        <!-- NIPS node -->
+        <g id="node-nips" class="diagram-node" onclick="selectNode('nips')" style="cursor:pointer">
+          <rect x="288" y="220" width="94" height="55" rx="4"
+                fill="black" stroke="cyan" stroke-width="2"/>
+          <text x="335" y="243" fill="cyan" text-anchor="middle"
+                font-family="Orbitron,sans-serif" font-size="9">NIPS</text>
+          <text x="335" y="257" fill="#9ff" text-anchor="middle" font-size="10">Active</text>
+          <text x="335" y="270" fill="#9ff" text-anchor="middle" font-size="10">Blocking</text>
+        </g>
+
+        <!-- HIDS node -->
+        <g id="node-hids" class="diagram-node" onclick="selectNode('hids')" style="cursor:pointer">
+          <rect x="418" y="100" width="94" height="55" rx="4"
+                fill="black" stroke="#0cf" stroke-width="2"/>
+          <text x="465" y="122" fill="#0cf" text-anchor="middle"
+                font-family="Orbitron,sans-serif" font-size="9">HIDS</text>
+          <text x="465" y="136" fill="#9ef" text-anchor="middle" font-size="10">File / Priv</text>
+          <text x="465" y="149" fill="#9ef" text-anchor="middle" font-size="10">Monitoring</text>
+        </g>
+
+        <!-- HIPS node -->
+        <g id="node-hips" class="diagram-node" onclick="selectNode('hips')" style="cursor:pointer">
+          <rect x="418" y="220" width="94" height="55" rx="4"
+                fill="black" stroke="#0cf" stroke-width="2"/>
+          <text x="465" y="243" fill="#0cf" text-anchor="middle"
+                font-family="Orbitron,sans-serif" font-size="9">HIPS</text>
+          <text x="465" y="257" fill="#9ef" text-anchor="middle" font-size="10">Endpoint</text>
+          <text x="465" y="270" fill="#9ef" text-anchor="middle" font-size="10">Prevention</text>
+        </g>
+
+        <!-- SIEM node -->
+        <g id="node-siem" class="diagram-node" onclick="selectNode('siem')" style="cursor:pointer">
+          <rect x="555" y="60" width="90" height="55" rx="4"
+                fill="black" stroke="#0f9" stroke-width="2"/>
+          <text x="600" y="83" fill="#0f9" text-anchor="middle"
+                font-family="Orbitron,sans-serif" font-size="9">SIEM</text>
+          <text x="600" y="97" fill="#9fd" text-anchor="middle" font-size="10">Log</text>
+          <text x="600" y="110" fill="#9fd" text-anchor="middle" font-size="10">Aggregation</text>
+        </g>
+
+        <!-- PHI DB node -->
+        <g id="node-phi" class="diagram-node" onclick="selectNode('phi')" style="cursor:pointer">
+          <rect x="555" y="240" width="90" height="55" rx="4"
+                fill="black" stroke="#0f9" stroke-width="2"/>
+          <text x="600" y="263" fill="#0f9" text-anchor="middle"
+                font-family="Orbitron,sans-serif" font-size="9">PHI DB</text>
+          <text x="600" y="277" fill="#9fd" text-anchor="middle" font-size="10">Patient</text>
+          <text x="600" y="290" fill="#9fd" text-anchor="middle" font-size="10">Records</text>
+        </g>
+
+        <!-- EDR node -->
+        <g id="node-edr" class="diagram-node" onclick="selectNode('edr')" style="cursor:pointer">
+          <rect x="665" y="150" width="80" height="55" rx="4"
+                fill="black" stroke="#0f9" stroke-width="2"/>
+          <text x="705" y="173" fill="#0f9" text-anchor="middle"
+                font-family="Orbitron,sans-serif" font-size="9">EDR</text>
+          <text x="705" y="187" fill="#9fd" text-anchor="middle" font-size="10">Endpoint</text>
+          <text x="705" y="200" fill="#9fd" text-anchor="middle" font-size="10">Detection</text>
+        </g>
+
+        <!-- ===== FLOW LINES ===== -->
+        <!-- Attacker → Firewall (red dashed = attack) -->
+        <line id="line-att-fw" x1="120" y1="185" x2="170" y2="185"
+              stroke="#f55" stroke-width="2.5" stroke-dasharray="8"
+              style="animation: attackAnim 1.2s linear infinite"
+              marker-end="url(#arrowRed)"/>
+
+        <!-- Firewall → NIDS/NIPS (cyan = passes through) -->
+        <line id="line-fw-nids" x1="250" y1="175" x2="288" y2="130"
+              stroke="cyan" stroke-width="1.8" stroke-dasharray="6"
+              style="animation: flowAnim 2s linear infinite"
+              marker-end="url(#arrowCyan)"/>
+        <line id="line-fw-nips" x1="250" y1="190" x2="288" y2="245"
+              stroke="cyan" stroke-width="1.8" stroke-dasharray="6"
+              style="animation: flowAnim 2s linear infinite"
+              marker-end="url(#arrowCyan)"/>
+
+        <!-- NIDS → SIEM -->
+        <line id="line-nids-siem" x1="382" y1="127" x2="555" y2="90"
+              stroke="#0f9" stroke-width="1.5" stroke-dasharray="5"
+              style="animation: flowAnim 2.5s linear infinite"
+              marker-end="url(#arrowGreen)"/>
+
+        <!-- NIDS/NIPS → HIDS/HIPS -->
+        <line id="line-n-h-top" x1="382" y1="127" x2="418" y2="127"
+              stroke="cyan" stroke-width="1.8" stroke-dasharray="6"
+              style="animation: flowAnim 2s linear infinite"
+              marker-end="url(#arrowCyan)"/>
+        <line id="line-n-h-bot" x1="382" y1="247" x2="418" y2="247"
+              stroke="cyan" stroke-width="1.8" stroke-dasharray="6"
+              style="animation: flowAnim 2s linear infinite"
+              marker-end="url(#arrowCyan)"/>
+
+        <!-- HIDS → SIEM -->
+        <line id="line-hids-siem" x1="512" y1="127" x2="555" y2="100"
+              stroke="#0f9" stroke-width="1.5" stroke-dasharray="5"
+              style="animation: flowAnim 2.5s linear infinite"
+              marker-end="url(#arrowGreen)"/>
+
+        <!-- HIDS/HIPS → PHI -->
+        <line id="line-h-phi" x1="512" y1="260" x2="555" y2="265"
+              stroke="#0cf" stroke-width="1.8" stroke-dasharray="6"
+              style="animation: flowAnim 2s linear infinite"
+              marker-end="url(#arrowCyan)"/>
+
+        <!-- PHI → EDR -->
+        <line id="line-phi-edr" x1="645" y1="270" x2="690" y2="205"
+              stroke="#0f9" stroke-width="1.5" stroke-dasharray="5"
+              style="animation: flowAnim 2.5s linear infinite"
+              marker-end="url(#arrowGreen)"/>
+
+        <!-- BLOCKED label placeholder (shown in attack mode) -->
+        <g id="block-label" opacity="0">
+          <rect x="270" y="178" width="80" height="24" rx="3" fill="black" stroke="#f55" stroke-width="1.5"/>
+          <text x="310" y="194" fill="#f55" text-anchor="middle"
+                font-family="Orbitron,sans-serif" font-size="10">⛔ BLOCKED</text>
+        </g>
+
+      </svg>
+    </div>
+
+    <div class="tooltip-box" id="diagramInfo">
+      <strong>LAYERED DEFENSE — OVERVIEW</strong>
+      Click any node or use the view buttons to explore each defensive layer. Each layer stops a different class of attack.
+    </div>
+  </div>
+
+  <!-- ATTACK PATH + MITRE -->
+  <div class="panel">
+    <h3>MITRE ATT&CK Mapping</h3>
+
+    <details>
+      <summary>Initial Access</summary>
+      <p>Phishing / Social Engineering (T1566) — Attackers targeted staff via email and social media schemes, mirroring the AFLAC 2025 breach methodology.</p>
+    </details>
+
+    <details>
+      <summary>Lateral Movement</summary>
+      <p>Internal Credential Abuse & Pass-the-Hash (T1021) — Once inside, attackers move between systems using stolen credentials. Without NIDS, this goes undetected.</p>
+    </details>
+
+    <details>
+      <summary>Privilege Escalation</summary>
+      <p>Exploitation for Privilege Escalation (T1068) — Host-based HIDS detects unauthorized file changes and privilege escalation on employee machines.</p>
+    </details>
+
+    <details>
+      <summary>Collection & Exfiltration</summary>
+      <p>Automated Data Collection (T1119) / Exfiltration Over Network (T1048) — NIPS active blocking halts data exfiltration before PHI leaves the network.</p>
+    </details>
+  </div>
+
+  <!-- VENDOR COMPARISON -->
+  <div class="panel">
+    <h3>IDS/IPS Vendor Matrix</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th>Cisco</th>
+            <th>Palo Alto ★</th>
+            <th>Fortinet</th>
+            <th>Trend Micro</th>
+            <th>Darktrace</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Network IPS (inline)</td><td class="check">✔</td><td class="check">✔</td><td class="check">✔</td><td class="check">✔ Best</td><td class="x">✗</td></tr>
+          <tr><td>IDS (passive)</td><td class="check">✔</td><td class="check">✔</td><td class="check">✔</td><td class="check">✔</td><td class="check">✔ AI</td></tr>
+          <tr><td>AI / Behavioral Detection</td><td>Limited</td><td>Moderate</td><td>Moderate</td><td>Low</td><td class="check">Strong</td></tr>
+          <tr><td>Medical Device Visibility</td><td>Moderate</td><td class="check">Strong</td><td class="check">Good</td><td class="check">Good</td><td class="check">Strong</td></tr>
+          <tr><td>Firewall Integration</td><td class="check">Native</td><td class="check">Native</td><td class="check">Native</td><td>Limited</td><td class="x">✗</td></tr>
+          <tr><td>False Positive Rate</td><td>Moderate</td><td>Low</td><td>Moderate</td><td class="check">Very Low</td><td class="check">Very Low</td></tr>
+          <tr><td>Relative Cost</td><td>$$$</td><td>$$$$</td><td>$$</td><td>$$$</td><td>$$$$</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- RECOMMENDATION -->
+  <div class="panel">
+    <h3>Recommended Solution</h3>
+
+    <details open>
+      <summary>Palo Alto Networks — Best Overall</summary>
+      <p>Industry-leading threat prevention with strong medical device visibility and native firewall integration. Estimated deployment: <strong>$5,000–$15,000 upfront</strong> + $3,000–$8,000/year ongoing. Subscription-based IDS/IPS licensing scales with the organization.</p>
+    </details>
+
+    <details>
+      <summary>Fortinet — Best Cost-Effective Option</summary>
+      <p>~$5,000–$30,000 total. Easiest deployment of the major vendors. Strong fit for a budget-conscious mid-sized urgent care expanding to multiple locations.</p>
+    </details>
+
+    <details>
+      <summary>IDS vs IPS — The Eyes & Hands Model</summary>
+      <p><strong>IDS = Eyes</strong> — Passive listener. Detects and alerts on suspicious traffic. Feeds the SIEM.<br>
+      <strong>IPS = Hands</strong> — Active inline blocker. Stops ransomware and exfiltration in real time.</p>
+    </details>
+
+    <details>
+      <summary>Pay Now vs Pay Later</summary>
+      <p>The upfront cost of an IDS/IPS solution is measured in thousands. The average cost of a healthcare data breach in 2024 exceeded $10 million. HIPAA and PCI-DSS compliance penalties add further exposure. The math is clear.</p>
+    </details>
+  </div>
+
+  <!-- FORENSICS -->
+  <div class="panel">
+    <h3>Computer Forensics Value</h3>
+    <div class="triad">
+      <div class="triad-item"><strong>IDS Logs</strong><br>Document intrusion attempts with timestamps, source IPs, and attack signatures — admissible forensic evidence for legal proceedings.</div>
+      <div class="triad-item"><strong>IPS Logs</strong><br>Record blocked attempts, enabling reconstruction of full attack timelines and identification of compromised systems.</div>
+      <div class="triad-item"><strong>SIEM Integration</strong><br>Aggregates all alerts for post-incident investigation, stakeholder reporting, and regulatory compliance documentation.</div>
+    </div>
+  </div>
+
+</section>
+
+<!-- STAR FIELD + DIAGRAM LOGIC -->
+<script>
+/* ---- Stars ---- */
+const canvas = document.getElementById('stars');
+const ctx = canvas.getContext('2d');
+let stars = [];
+function initStars() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  stars = [];
+  for (let i = 0; i < 120; i++) {
+    stars.push({ x: Math.random() * canvas.width, y: Math.random() * canvas.height, s: Math.random() * 2 });
+  }
+}
+function animateStars() {
+  ctx.fillStyle = 'black';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = 'white';
+  stars.forEach(st => { ctx.fillRect(st.x, st.y, st.s, st.s); st.x -= 0.3; if (st.x < 0) st.x = canvas.width; });
+  requestAnimationFrame(animateStars);
+}
+window.addEventListener('resize', initStars);
+initStars(); animateStars();
+
+/* ---- Diagram interactivity ---- */
+const nodeInfo = {
+  attacker: {
+    title: 'THREAT ACTOR — ATTACKER',
+    text: 'Initiates the breach via phishing or social engineering. Mirrors the 2025 AFLAC attack vector. Without IDS/IPS, this intrusion would go undetected until significant damage is done.'
+  },
+  fw: {
+    title: 'FIREWALL — FIRST LINE',
+    text: 'Filters by port/IP rules only. Cannot detect behavioral anomalies, insider threats, or lateral movement. The current ONLY defense at Carter\'s Urgent Care — a critical gap.'
+  },
+  nids: {
+    title: 'NIDS — NETWORK INTRUSION DETECTION',
+    text: 'Passive listener on the network. Detects large-scale attacks, suspicious traffic patterns, and data exfiltration attempts. Acts as the "eyes" of your defense — feeds alerts to the SIEM for forensic investigation.'
+  },
+  nips: {
+    title: 'NIPS — NETWORK INTRUSION PREVENTION',
+    text: 'Inline active blocker. Stops suspicious traffic before it reaches internal systems. Halts ransomware spread and data exfiltration in real time. The "hands" of your defense.'
+  },
+  hids: {
+    title: 'HIDS — HOST INTRUSION DETECTION',
+    text: 'Lives on individual endpoints and servers. Detects unauthorized file changes, privilege escalations, and malware installation. Critical for protecting workstations that handle PHI.'
+  },
+  hips: {
+    title: 'HIPS — HOST INTRUSION PREVENTION',
+    text: 'Active endpoint protection. Blocks malware execution and unauthorized changes at the device level. Covers older medical devices that cannot run full EDR solutions.'
+  },
+  siem: {
+    title: 'SIEM — SECURITY INFORMATION & EVENT MANAGEMENT',
+    text: 'Aggregates and analyzes logs from IDS, IPS, and HIDS. Does not stop attacks but is essential for forensics, post-incident investigation, stakeholder reporting, and HIPAA compliance.'
+  },
+  phi: {
+    title: 'PHI DATABASE — PROTECTED HEALTH INFORMATION',
+    text: 'The crown jewel. Patient SSNs, health records, and policy data. An attacker must breach every preceding layer to reach this — the layered model ensures each breach attempt is detected and blocked.'
+  },
+  edr: {
+    title: 'EDR — ENDPOINT DETECTION & RESPONSE',
+    text: 'Advanced behavioral analysis for managed user devices and servers. Complements HIDS/HIPS but does not fully replace them — EDR cannot protect older medical devices, which IDS/IPS can still cover.'
+  }
+};
+
+function selectNode(id) {
+  const info = nodeInfo[id];
+  if (!info) return;
+  const box = document.getElementById('diagramInfo');
+  box.innerHTML = `<strong>${info.title}</strong>${info.text}`;
+  // pulse the selected node
+  document.querySelectorAll('.diagram-node rect, .diagram-node circle').forEach(el => {
+    el.style.filter = '';
+  });
+  const node = document.getElementById('node-' + id);
+  if (node) {
+    node.querySelectorAll('rect, circle').forEach(el => {
+      el.classList.add('layer-highlight');
+      setTimeout(() => el.classList.remove('layer-highlight'), 3000);
+    });
+  }
+}
+
+let currentView = 'all';
+
+function setView(view) {
+  currentView = view;
+  document.querySelectorAll('.diagram-controls button').forEach(b => b.classList.remove('active'));
+  document.getElementById('btn-' + view).classList.add('active');
+
+  const blockLabel = document.getElementById('block-label');
+  const attLine = document.getElementById('line-att-fw');
+  const infoBox = document.getElementById('diagramInfo');
+
+  const allNodes = ['node-attacker','node-fw','node-nids','node-nips','node-hids','node-hips','node-siem','node-phi','node-edr'];
+  const allLines = ['line-att-fw','line-fw-nids','line-fw-nips','line-nids-siem','line-n-h-top','line-n-h-bot','line-hids-siem','line-h-phi','line-phi-edr'];
+
+  // reset opacity
+  allNodes.forEach(id => { const el = document.getElementById(id); if(el) el.style.opacity='1'; });
+  allLines.forEach(id => { const el = document.getElementById(id); if(el) el.style.opacity='1'; });
+  blockLabel.style.opacity = '0';
+
+  if (view === 'all') {
+    infoBox.innerHTML = '<strong>LAYERED DEFENSE — OVERVIEW</strong>Click any node or use the view buttons to explore each defensive layer. Each layer stops a different class of attack.';
+  } else if (view === 'attack') {
+    // dim non-attack path
+    ['node-siem','node-edr','line-nids-siem','line-hids-siem','line-phi-edr'].forEach(id => {
+      const el = document.getElementById(id); if(el) el.style.opacity='0.2';
+    });
+    blockLabel.style.opacity = '1';
+    infoBox.innerHTML = '<strong>ATTACK PATH — PHISHING TO PHI</strong>The attacker enters via phishing, passes through the firewall (port/IP filter only), then hits the NIDS/NIPS wall. Without IDS/IPS, lateral movement continues undetected all the way to the PHI database.';
+  } else if (view === 'ids') {
+    ['node-nips','node-hips','line-fw-nips','line-n-h-bot','line-h-phi'].forEach(id => {
+      const el = document.getElementById(id); if(el) el.style.opacity='0.2';
+    });
+    infoBox.innerHTML = '<strong>IDS VIEW — DETECTION ONLY</strong>NIDS and HIDS passively monitor traffic and endpoint activity. All alerts flow into the SIEM for logging, forensics, and compliance reporting. No active blocking — detection is the mission.';
+  } else if (view === 'ips') {
+    ['node-nids','node-hids','line-fw-nids','line-n-h-top','line-nids-siem','line-hids-siem'].forEach(id => {
+      const el = document.getElementById(id); if(el) el.style.opacity='0.2';
+    });
+    infoBox.innerHTML = '<strong>IPS VIEW — ACTIVE PREVENTION</strong>NIPS and HIPS are inline blockers. NIPS stops malicious network traffic before it spreads. HIPS prevents unauthorized execution on endpoints. Together they form the active "hands" of the defense system.';
+  }
+}
+</script>
+
+</body>
+</html>
